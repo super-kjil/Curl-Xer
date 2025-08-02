@@ -22,6 +22,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // History routes
         Route::get('/history', [App\Http\Controllers\DomainCheckerHistoryController::class, 'index'])->name('history');
         Route::get('/history/data', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getHistory'])->name('history-data');
+        Route::get('/history/chart-data', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getChartData'])->name('chart-data');
         Route::delete('/history', [App\Http\Controllers\DomainCheckerHistoryController::class, 'deleteHistory'])->name('delete-history');
         Route::delete('/history/clear', [App\Http\Controllers\DomainCheckerHistoryController::class, 'clearHistory'])->name('clear-history');
         Route::get('/history/details', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getHistoryDetails'])->name('history-details');

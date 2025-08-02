@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
 import { useDNSSettings } from '@/hooks/use-dns-settings';
 import { 
     Globe, 
@@ -21,6 +22,7 @@ import {
     Settings, 
     Sun, 
     Moon, 
+    Inbox,
     Edit, 
     BarChart3, 
     CheckCircle, 
@@ -63,6 +65,9 @@ export default function DomainCheckerIndex() {
     const [checkId, setCheckId] = useState('');
     const [timestamp, setTimestamp] = useState('');
     const [isDarkMode, setIsDarkMode] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const [checkedUrls, setCheckedUrls] = useState(0);
+    const [progressIntervalId, setProgressIntervalId] = useState<NodeJS.Timeout | null>(null);
     
     const { settings, loading: dnsLoading } = useDNSSettings();
 
@@ -74,6 +79,16 @@ export default function DomainCheckerIndex() {
             document.documentElement.classList.add('dark');
         }
     }, []);
+
+    // Cleanup effect for progress interval
+    useEffect(() => {
+        return () => {
+            // Cleanup progress interval when component unmounts
+            if (progressIntervalId) {
+                clearInterval(progressIntervalId);
+            }
+        };
+    }, [progressIntervalId]);
 
     const getCurrentDNSDisplay = () => {
         if (dnsLoading) return 'Loading DNS settings...';
@@ -107,6 +122,27 @@ export default function DomainCheckerIndex() {
 
         setIsChecking(true);
         setResults([]);
+        setProgress(0);
+        setCheckedUrls(0);
+
+        // Calculate total URLs to check
+        const urlList = urls.trim().split('\n').filter(url => url.trim());
+        const totalUrlsToCheck = urlList.length;
+        setTotalUrls(totalUrlsToCheck);
+
+        // Simulate progress updates
+        const intervalId = setInterval(() => {
+            setProgress(prev => {
+                if (prev >= 90) return prev; // Don't go beyond 90% until complete
+                return prev + Math.random() * 15 + 5; // Random increment between 5-20%
+            });
+            setCheckedUrls(prev => {
+                const newChecked = Math.min(prev + Math.floor(Math.random() * 3) + 1, totalUrlsToCheck);
+                return newChecked;
+            });
+        }, 500); // Update every 500ms
+        
+        setProgressIntervalId(intervalId);
 
         try {
             const response = await axios.post<CheckResponse>('/domain-checker/check-urls', {
@@ -116,18 +152,31 @@ export default function DomainCheckerIndex() {
                 command
             });
 
+            // Clear the progress interval
+            if (progressIntervalId) {
+                clearInterval(progressIntervalId);
+                setProgressIntervalId(null);
+            }
+
             if (response.data.success) {
                 setResults(response.data.results);
                 setSuccessRate(response.data.success_rate);
                 setTotalUrls(response.data.total_urls);
                 setCheckId(response.data.check_id);
                 setTimestamp(response.data.timestamp);
+                setProgress(100);
+                setCheckedUrls(response.data.total_urls);
                 
                 toast.success("URLs checked successfully", {
                     description: `Checked ${response.data.total_urls} URLs with ${response.data.success_rate}% success rate`,
                 });
             }
         } catch (error: any) {
+            // Clear the progress interval on error
+            if (progressIntervalId) {
+                clearInterval(progressIntervalId);
+                setProgressIntervalId(null);
+            }
             console.error('Error checking URLs:', error);
             toast.error("Failed to check URLs", {
                 description: error.response?.data?.message || 'An unexpected error occurred',
@@ -150,6 +199,10 @@ export default function DomainCheckerIndex() {
         if (status >= 400 && status < 500) return 'Client Error';
         if (status >= 500) return 'Server Error';
         return 'Unknown';
+    };
+
+    const getUrlCount = () => {
+        return urls.trim() ? urls.trim().split('\n').filter(url => url.trim()).length : 0;
     };
 
     return (
@@ -194,25 +247,35 @@ export default function DomainCheckerIndex() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Input Panel */}
                         <div className="lg:col-span-1">
-                            <Card>
+                            <Card className=' dark:bg-gray-800'>
                                 <CardHeader>
-                                    <CardTitle className="flex items-center">
-                                        <Edit className="mr-2 h-5 w-5" />
-                                        Input
+                                    <CardTitle className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            <Edit className="mr-2 h-5 w-5" />
+                                            Input Domains
+                                        </div>
+                                        <Badge variant="outline" className="text-xs">
+                                            {getUrlCount()} URLs
+                                        </Badge>
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
 
                                 {/* URLs Input */}
                                 <div className="mb-4">
-                                    <Label htmlFor="urls">
-                                        URLs (one per line) <span className="text-red-500">*</span>
-                                    </Label>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <Label htmlFor="urls">
+                                            URLs (one per line) <span className="text-red-500">*</span>
+                                        </Label>
+                                        <span className="text-xs text-muted-foreground">
+                                            {getUrlCount()} URLs entered
+                                        </span>
+                                    </div>
                                     <Textarea
                                         id="urls"
                                         value={urls}
                                         onChange={(e) => setUrls(e.target.value)}
-                                        className="h-48 mt-2 resize-none"
+                                        className="h-48 mt-2 resize-y dark:bg-gray-900"
                                         placeholder="Enter URLs here...&#10;example.com&#10;https://google.com&#10;http://github.com"
                                     />
                                 </div>
@@ -228,8 +291,8 @@ export default function DomainCheckerIndex() {
                                         type="text"
                                         value={command}
                                         onChange={(e) => setCommand(e.target.value)}
-                                        className="mt-2"
-                                        placeholder="Custom command identifier"
+                                        className="mt-2 dark:bg-gray-900"
+                                        placeholder="Input file name or Domain name"
                                     />
                                 </div>
 
@@ -258,14 +321,14 @@ export default function DomainCheckerIndex() {
 
                         {/* Results Panel */}
                         <div className="lg:col-span-2">
-                            <Card>
+                            <Card className=' dark:bg-gray-800'>
                                 <CardHeader>
                                     <div className="flex items-center justify-between">
                                         <CardTitle className="flex items-center">
                                             <BarChart3 className="mr-2 h-5 w-5" />
                                             Results
                                         </CardTitle>
-                                        {results.length > 0 && (
+                                        {/* {results.length > 0 && ( */}
                                             <div className="flex items-center space-x-4">
                                                 <Badge variant="outline">
                                                     Total: {totalUrls}
@@ -274,17 +337,38 @@ export default function DomainCheckerIndex() {
                                                     Success Rate: <span className="font-semibold text-green-600 ml-1">{successRate}%</span>
                                                 </Badge>
                                             </div>
-                                        )}
+                                        {/* )} */}
                                     </div>
                                 </CardHeader>
                                 <CardContent>
+
+                                {/* Progress Bar */}
+                                {isChecking && (
+                                    <div className="mb-6">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-medium">Checking URLs...</span>
+                                            <span className="text-sm text-muted-foreground">
+                                                {checkedUrls} / {totalUrls} URLs checked
+                                            </span>
+                                        </div>
+                                        <Progress value={progress} className="w-full" />
+                                        <div className="flex items-center justify-between mt-2">
+                                            <span className="text-xs text-muted-foreground">
+                                                {Math.round(progress)}% complete
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                                {totalUrls - checkedUrls} remaining
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {results.length > 0 ? (
                                     <div className="space-y-2 max-h-96 overflow-y-auto">
                                         {results.map((result, index) => (
                                             <div
                                                 key={index}
-                                                className={`p-4 rounded-lg border ${
+                                                className={`p-2 rounded-lg border ${
                                                     result.accessible
                                                         ? 'border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800'
                                                         : 'border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800'
@@ -321,8 +405,8 @@ export default function DomainCheckerIndex() {
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="text-center py-12 text-muted-foreground">
-                                        <Search className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                                    <div className="text-center py-12 text-muted-foreground border border-gray-200 rounded-lg">
+                                        <Inbox className="mx-auto h-12 w-12 mb-4 opacity-50" />
                                         <p>No results yet. Enter URLs and click "Check URLs" to get started.</p>
                                     </div>
                                 )}

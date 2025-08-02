@@ -104,4 +104,72 @@ class DomainCheckerHistoryController extends Controller
             ]
         ]);
     }
+
+    public function getChartData(Request $request)
+    {
+        $request->validate([
+            'filter' => 'required|in:7days,1month,3months,custom',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
+
+        $query = UrlCheck::where('user_id', Auth::id());
+
+        switch ($request->filter) {
+            case '7days':
+                $query->where('timestamp', '>=', now()->subDays(7));
+                break;
+            case '1month':
+                $query->where('timestamp', '>=', now()->subMonth());
+                break;
+            case '3months':
+                $query->where('timestamp', '>=', now()->subMonths(3));
+                break;
+            case 'custom':
+                if ($request->start_date && $request->end_date) {
+                    $query->whereBetween('timestamp', [$request->start_date, $request->end_date]);
+                }
+                break;
+        }
+
+        $data = $query->orderBy('timestamp', 'asc')->get();
+
+        // Group by date and calculate averages
+        $groupedData = $data->groupBy(function ($item) {
+            return $item->timestamp->format('Y-m-d');
+        })->map(function ($group) {
+            $avgSuccessRate = round($group->avg('success_rate'), 2);
+            $totalUrls = $group->sum('url_count');
+            $successUrls = round(($avgSuccessRate / 100) * $totalUrls);
+            $failedUrls = $totalUrls - $successUrls;
+            
+            return [
+                'success_rate' => $avgSuccessRate,
+                'url_count' => $totalUrls,
+                'success_urls' => $successUrls,
+                'failed_urls' => $failedUrls,
+                'count' => $group->count(),
+            ];
+        });
+
+        // Convert to chart format
+        $chartData = $groupedData->map(function ($item, $date) {
+            return [
+                'name' => $date,
+                'success_rate' => $item['success_rate'],
+                'url_count' => $item['url_count'],
+                'success_urls' => $item['success_urls'],
+                'failed_urls' => $item['failed_urls'],
+                'checks' => $item['count'],
+            ];
+        })->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $chartData,
+            'total_checks' => $data->count(),
+            'avg_success_rate' => round($data->avg('success_rate'), 2),
+            'total_urls' => $data->sum('url_count'),
+        ]);
+    }
 }
