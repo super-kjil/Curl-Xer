@@ -33,6 +33,7 @@ class DomainCheckerSettingsController extends Controller
             'primary_dns' => 'nullable|string',
             'secondary_dns' => 'nullable|string',
             'batch_size' => 'integer|min:1|max:1000',
+            'large_batch_size' => 'integer|min:500|max:2000',
             'timeout' => 'integer|min:5|max:300',
             'auto_detect_dns' => 'boolean',
             'custom_dns_servers' => 'nullable|array',
@@ -59,6 +60,7 @@ class DomainCheckerSettingsController extends Controller
                 'primary_dns' => $request->primary_dns,
                 'secondary_dns' => $request->secondary_dns,
                 'batch_size' => $request->batch_size ?? 100,
+                'large_batch_size' => $request->large_batch_size ?? 1000,
                 'timeout' => $request->timeout ?? 30,
                 'auto_detect_dns' => $request->auto_detect_dns ?? true,
                 'custom_dns_servers' => $request->custom_dns_servers,
@@ -74,44 +76,64 @@ class DomainCheckerSettingsController extends Controller
 
     public function getSettings()
     {
-        $settings = DomainCheckerSetting::where('user_id', Auth::id())->first();
+        // Get server DNS (shared for all team members)
+        $serverDNS = $this->urlCheckerService->getServerDNSWithCache();
+        $cacheInfo = $this->urlCheckerService->getServerDNSCacheInfo();
+        
+        // Get user-specific settings (batch size, timeout, etc.)
+        $userSettings = DomainCheckerSetting::where('user_id', Auth::id())->first();
+        
+        if (!$userSettings) {
+            $userSettings = new DomainCheckerSetting([
+                'user_id' => Auth::id(),
+                'batch_size' => 100,
+                'large_batch_size' => 1000,
+                'timeout' => 30,
+                'auto_detect_dns' => true,
+                'custom_dns_servers' => []
+            ]);
+        }
+        
+        // Merge server DNS with user settings
+        $settings = $userSettings->toArray();
+        $settings['primary_dns'] = $serverDNS['primary'] ?? '8.8.8.8';
+        $settings['secondary_dns'] = $serverDNS['secondary'] ?? '1.1.1.1';
+        $settings['dns_source'] = 'server'; // Indicate DNS comes from server
         
         return response()->json([
             'success' => true,
-            'settings' => $settings
+            'settings' => $settings,
+            'server_dns' => $serverDNS,
+            'cache_info' => [
+                'cached' => $cacheInfo['cached'],
+                'cache_duration' => '15 minutes'
+            ]
         ]);
     }
 
     public function detectDNS()
     {
         try {
-            $dns = $this->urlCheckerService->getDefaultDNS();
+            // Clear cache and get fresh DNS
+            $this->urlCheckerService->clearServerDNSCache();
+            $dns = $this->urlCheckerService->getServerDNSWithCache();
             
-            // Log the detected DNS for debugging
-            Log::info('DNS Detection Result', [
-                'user_id' => Auth::id(),
+            Log::info('Server DNS Detection for Team', [
                 'detected_dns' => $dns,
-                'os' => PHP_OS
+                'server_ip' => request()->server('SERVER_ADDR'),
+                'user_id' => Auth::id(),
+                'timestamp' => now()
             ]);
-            
-            // Save detected DNS to database
-            $settings = DomainCheckerSetting::updateOrCreate(
-                ['user_id' => Auth::id()],
-                [
-                    'primary_dns' => $dns['primary'] ?? '',
-                    'secondary_dns' => $dns['secondary'] ?? '',
-                    'auto_detect_dns' => true,
-                ]
-            );
             
             return response()->json([
                 'success' => true,
                 'dns' => $dns,
-                'settings' => $settings,
-                'message' => 'DNS settings detected and saved successfully'
+                'message' => 'Server DNS settings detected and cached successfully',
+                'note' => 'These DNS settings are shared by all team members',
+                'cache_duration' => '15 minutes'
             ]);
         } catch (\Exception $e) {
-            Log::error('DNS Detection Error', [
+            Log::error('Server DNS Detection Error', [
                 'user_id' => Auth::id(),
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -119,8 +141,56 @@ class DomainCheckerSettingsController extends Controller
             
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to detect DNS settings: ' . $e->getMessage()
+                'message' => 'Failed to detect server DNS settings: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Refresh server DNS cache (admin function)
+     */
+    public function refreshServerDNS()
+    {
+        try {
+            $this->urlCheckerService->clearServerDNSCache();
+            $dns = $this->urlCheckerService->getServerDNSWithCache();
+            
+            Log::info('Server DNS Cache Refreshed', [
+                'refreshed_by' => Auth::id(),
+                'new_dns' => $dns,
+                'timestamp' => now()
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'dns' => $dns,
+                'message' => 'Server DNS cache refreshed successfully',
+                'refreshed_at' => now()->toISOString()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Server DNS Cache Refresh Error', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to refresh server DNS cache: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get server DNS cache status
+     */
+    public function getServerDNSStatus()
+    {
+        $cacheInfo = $this->urlCheckerService->getServerDNSCacheInfo();
+        
+        return response()->json([
+            'success' => true,
+            'cache_info' => $cacheInfo,
+            'cache_duration' => '15 minutes'
+        ]);
     }
 }

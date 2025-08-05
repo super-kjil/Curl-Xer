@@ -32,6 +32,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/settings', [App\Http\Controllers\DomainCheckerSettingsController::class, 'update'])->name('update-settings');
         Route::get('/settings/get', [App\Http\Controllers\DomainCheckerSettingsController::class, 'getSettings'])->name('get-settings');
         Route::get('/settings/detect-dns', [App\Http\Controllers\DomainCheckerSettingsController::class, 'detectDNS'])->name('detect-dns');
+        
+        // Server DNS Cache Management Routes
+        Route::post('/settings/refresh-server-dns', [App\Http\Controllers\DomainCheckerSettingsController::class, 'refreshServerDNS'])->name('refresh-server-dns');
+        Route::get('/settings/server-dns-status', [App\Http\Controllers\DomainCheckerSettingsController::class, 'getServerDNSStatus'])->name('server-dns-status');
+    });
+
+    // URL Generator Routes
+    Route::prefix('url-generator')->name('url-generator.')->group(function () {
+        Route::get('/', [App\Http\Controllers\UrlGeneratorController::class, 'index'])->name('index');
+        Route::post('/generate', [App\Http\Controllers\UrlGeneratorController::class, 'generate'])->name('generate');
     });
 });
 

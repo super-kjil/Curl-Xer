@@ -14,9 +14,10 @@ return new class extends Migration
         Schema::create('domain_checker_settings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('primary_dns')->nullable();
-            $table->string('secondary_dns')->nullable();
+            $table->string('primary_dns')->default("8.8.8.8");
+            $table->string('secondary_dns')->default("1.1.1.1");
             $table->integer('batch_size')->default(100);
+            $table->integer('large_batch_size')->default(1000);
             $table->integer('timeout')->default(30);
             $table->boolean('auto_detect_dns')->default(true);
             $table->json('custom_dns_servers')->nullable();

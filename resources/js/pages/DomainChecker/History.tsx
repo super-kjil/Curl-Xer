@@ -5,7 +5,7 @@ import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import axios from 'axios';
-import { AlertTriangle, BadgeCheckIcon, Copy, Trash } from 'lucide-react';
+import { AlertTriangle, BadgeCheckIcon, CheckCircle, Copy, Trash, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -249,6 +249,12 @@ export default function DomainCheckerHistory() {
                                             </div>
 
                                             <div className="flex items-center space-x-2">
+                                                {/* <Button 
+                                                    variant="outline"
+                                                    onclick={() => expend}
+                                                    >
+
+                                                </Button> */}
                                                 <Button variant="outline" onClick={() => copyHistory(item)} title="Copy URLs with timestamps">
                                                     <Copy />
                                                 </Button>
@@ -266,7 +272,7 @@ export default function DomainCheckerHistory() {
                                     </div>
 
                                     {/* Expanded Details */}
-                                    {/* <div className={`history-details ${expandedItems.has(item.id) ? 'expanded' : 'collapsed'}`}>
+                                    <div className={`history-details ${expandedItems.has(item.id) ? 'expanded' : 'collapsed'}`}>
                                         <div className="border-t border-gray-200 dark:border-gray-500 p-6 bg-gray-50 dark:bg-gray-800">
                                             <div className="space-x-2 space-y-2 max-h-64 overflow-y-auto">
                                                 {item.results.map((result, index) => (
@@ -306,7 +312,7 @@ export default function DomainCheckerHistory() {
                                                 ))}
                                             </div>
                                         </div>
-                                    </div> */}
+                                    </div>
                                 </div>
                             ))}
                         </div>

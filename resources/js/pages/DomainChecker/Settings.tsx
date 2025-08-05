@@ -4,7 +4,6 @@ import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { useDNSSettings } from '@/hooks/use-dns-settings';
 import { DNSLoadingSkeleton } from '@/components/dns-loading-skeleton';
-import { DNSCache } from '@/lib/dns-cache';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -18,15 +17,19 @@ export default function DomainCheckerSettings() {
         loading,
         saving,
         detecting,
+        refreshing,
+        serverDNS,
+        cacheInfo,
         updateSettings,
         saveSettings,
         detectDNS,
+        refreshServerDNS,
         addCustomDNS,
         removeCustomDNS
     } = useDNSSettings();
 
     const handleRefreshSettings = () => {
-        DNSCache.clear();
+        // Force fresh reload to get latest DNS settings from server
         window.location.reload();
     };
     const [isDarkMode, setIsDarkMode] = useState(false);
@@ -60,6 +63,33 @@ export default function DomainCheckerSettings() {
 
     if (loading) {
         return <DNSLoadingSkeleton />;
+    }
+
+    // Safety check for null settings
+    if (!settings) {
+        return (
+            <AppLayout breadcrumbs={breadcrumbs}>
+                <Head title="Domain Checker" />
+                <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+                    <div className="container mx-auto px-4 py-8">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
+                                Settings Not Available
+                            </h2>
+                            <p className="text-gray-600 dark:text-gray-400">
+                                DNS settings are not available. Please try refreshing the page.
+                            </p>
+                            <button
+                                onClick={handleRefreshSettings}
+                                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                            >
+                                Refresh Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </AppLayout>
+        );
     }
 
     return (
@@ -108,67 +138,122 @@ export default function DomainCheckerSettings() {
 
                 <div className="container mx-auto px-4 py-8">
                     <div className="max-w-2xl mx-auto">
+                        {/* Server DNS Info Banner */}
+                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                    <i className="fas fa-server text-blue-500 mr-3 text-lg"></i>
+                                    <div>
+                                        <h4 className="font-medium text-blue-800 dark:text-blue-200">Server DNS Settings (Team Shared)</h4>
+                                        <p className="text-sm text-blue-600 dark:text-blue-300">
+                                            Primary: <span className="font-mono font-semibold">{settings.primary_dns}</span> |
+                                            Secondary: <span className="font-mono font-semibold">{settings.secondary_dns}</span>
+                                        </p>
+                                        {cacheInfo && (
+                                            <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">
+                                                {cacheInfo.cached ? `Cached (${cacheInfo.cache_duration})` : 'Fresh from server'}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={refreshServerDNS}
+                                    disabled={refreshing}
+                                    className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50"
+                                    title="Refresh Server DNS Cache"
+                                >
+                                    <i className={`fas fa-sync-alt ${refreshing ? 'fa-spin' : ''}`}></i>
+                                </button>
+                            </div>
+                        </div>
+
                         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6">
                             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6 flex items-center">
-                                <i className="fas fa-server mr-2 text-blue-500"></i> DNS Settings
+                                <i className="fas fa-cog mr-2 text-blue-500"></i> DNS Settings
                             </h2>
 
                             <div className="space-y-6">
-                                {/* Auto Detect DNS */}
+                                {/* Server DNS Detection */}
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                            Auto-detect DNS
+                                            Detect Server DNS
                                         </label>
                                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            Automatically detect system DNS settings
+                                            Detect and cache DNS settings from the server (shared by all team members)
                                         </p>
                                     </div>
-                                    <button
-                                        onClick={detectDNS}
-                                        disabled={detecting}
-                                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {detecting ? (
-                                            <>
-                                                <i className="fas fa-spinner fa-spin mr-2"></i>
-                                                Detecting...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className="fas fa-search mr-2"></i>
-                                                Detect DNS
-                                            </>
-                                        )}
-                                    </button>
+                                    <div className="flex space-x-2">
+                                        <button
+                                            onClick={refreshServerDNS}
+                                            disabled={refreshing}
+                                            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Refresh DNS cache"
+                                        >
+                                            {refreshing ? (
+                                                <>
+                                                    <i className="fas fa-spinner fa-spin mr-2"></i>
+                                                    Refreshing...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <i className="fas fa-sync-alt mr-2"></i>
+                                                    Refresh Cache
+                                                </>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={detectDNS}
+                                            disabled={detecting}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {detecting ? (
+                                                <>
+                                                    <i className="fas fa-spinner fa-spin mr-2"></i>
+                                                    Detecting...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <i className="fas fa-search mr-2"></i>
+                                                    Detect Fresh
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
 
-                                {/* Primary DNS */}
+                                {/* Primary DNS (Read-only for server DNS) */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Primary DNS
+                                        Primary DNS (Server)
                                     </label>
                                     <input
                                         type="text"
-                                        value={settings.primary_dns}
-                                        onChange={(e) => updateSettings({ primary_dns: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                                        placeholder="8.8.8.8"
+                                        value={settings.primary_dns || ''}
+                                        readOnly
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 cursor-not-allowed"
+                                        placeholder="Detected from server"
                                     />
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        This DNS is automatically detected from the server and shared by all team members
+                                    </p>
                                 </div>
 
-                                {/* Secondary DNS */}
+                                {/* Secondary DNS (Read-only for server DNS) */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Secondary DNS
+                                        Secondary DNS (Server)
                                     </label>
                                     <input
                                         type="text"
-                                        value={settings.secondary_dns}
-                                        onChange={(e) => updateSettings({ secondary_dns: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                                        placeholder="8.8.4.4"
+                                        value={settings.secondary_dns || ''}
+                                        readOnly
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 cursor-not-allowed"
+                                        placeholder="Detected from server"
                                     />
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        Secondary DNS server from the same network configuration
+                                    </p>
                                 </div>
 
                                 {/* Custom DNS Servers */}
@@ -186,7 +271,7 @@ export default function DomainCheckerSettings() {
                                         </button>
                                     </div>
                                     <div className="space-y-2">
-                                        {settings.custom_dns_servers.map((dns, index) => (
+                                        {(settings.custom_dns_servers || []).map((dns, index) => (
                                             <div key={index} className="flex items-center space-x-2">
                                                 <input
                                                     type="text"
@@ -202,7 +287,7 @@ export default function DomainCheckerSettings() {
                                                 </button>
                                             </div>
                                         ))}
-                                        {settings.custom_dns_servers.length === 0 && (
+                                        {(settings.custom_dns_servers || []).length === 0 && (
                                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                                 No custom DNS servers added
                                             </p>
@@ -223,14 +308,32 @@ export default function DomainCheckerSettings() {
                                     </label>
                                     <input
                                         type="number"
-                                        value={settings.batch_size}
+                                        value={settings.batch_size || 100}
                                         onChange={(e) => updateSettings({ batch_size: parseInt(e.target.value) || 100 })}
                                         min="1"
                                         max="1000"
                                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                                     />
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                        Number of URLs to check in each batch
+                                        Number of URLs to check in each batch (recommended: 100-500 for small sets, 500-1000 for large sets)
+                                    </p>
+                                </div>
+
+                                {/* Large URL Batch Size */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Large URL Batch Size
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={settings.large_batch_size || 1000}
+                                        onChange={(e) => updateSettings({ large_batch_size: parseInt(e.target.value) || 1000 })}
+                                        min="500"
+                                        max="2000"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                    />
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        Batch size for URL sets with 10,000+ URLs (recommended: 1000 for optimal performance)
                                     </p>
                                 </div>
 
@@ -241,7 +344,7 @@ export default function DomainCheckerSettings() {
                                     </label>
                                     <input
                                         type="number"
-                                        value={settings.timeout}
+                                        value={settings.timeout || 30}
                                         onChange={(e) => updateSettings({ timeout: parseInt(e.target.value) || 30 })}
                                         min="5"
                                         max="120"

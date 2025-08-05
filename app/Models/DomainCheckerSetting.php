@@ -15,6 +15,7 @@ class DomainCheckerSetting extends Model
         'primary_dns',
         'secondary_dns',
         'batch_size',
+        'large_batch_size',
         'timeout',
         'auto_detect_dns',
         'custom_dns_servers',

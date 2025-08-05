@@ -35,6 +35,7 @@ class DomainCheckerController extends Controller
         $primary_dns = $request->primary_dns;
         $secondary_dns = $request->secondary_dns;
         $command = $request->command;
+        $url_count = count($urls);
 
         // Validate DNS if provided
         if ($primary_dns && !$this->urlCheckerService->isValidDNS($primary_dns)) {
@@ -51,13 +52,29 @@ class DomainCheckerController extends Controller
             ], 400);
         }
 
-        // Check URLs
-        $results = $this->urlCheckerService->checkURLsParallel(
-            $urls,
-            $primary_dns,
-            $secondary_dns,
-            $command
-        );
+        // Choose processing method based on URL count
+        if ($url_count > 10000) {
+            // Use optimized method for large URL sets
+            $batch_size = $this->urlCheckerService->calculateOptimalBatchSize($url_count);
+            $estimated_time = $this->urlCheckerService->estimateProcessingTime($url_count, $batch_size);
+            
+            $results = $this->urlCheckerService->checkURLsOptimized(
+                $urls,
+                $primary_dns,
+                $secondary_dns,
+                $command,
+                $batch_size,
+                3 // max concurrent batches
+            );
+        } else {
+            // Use standard method for smaller URL sets
+            $results = $this->urlCheckerService->checkURLsParallel(
+                $urls,
+                $primary_dns,
+                $secondary_dns,
+                $command
+            );
+        }
 
         // Calculate success rate
         $success_rate = $this->urlCheckerService->calculateSuccessRate($results);
@@ -69,7 +86,7 @@ class DomainCheckerController extends Controller
         $urlCheck = UrlCheck::create([
             'check_id' => $check_id,
             'command' => $command,
-            'url_count' => count($urls),
+            'url_count' => $url_count,
             'results' => $results,
             'timestamp' => now(),
             'success_rate' => $success_rate,
@@ -83,8 +100,10 @@ class DomainCheckerController extends Controller
             'check_id' => $check_id,
             'results' => $results,
             'success_rate' => $success_rate,
-            'total_urls' => count($urls),
-            'timestamp' => $urlCheck->timestamp
+            'total_urls' => $url_count,
+            'timestamp' => $urlCheck->timestamp,
+            'processing_method' => $url_count > 10000 ? 'optimized' : 'standard',
+            'estimated_time' => $url_count > 10000 ? $estimated_time : null
         ]);
     }
 

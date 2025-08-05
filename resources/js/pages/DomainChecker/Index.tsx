@@ -53,6 +53,8 @@ interface CheckResponse {
     success_rate: number;
     total_urls: number;
     timestamp: string;
+    processing_method?: string;
+    estimated_time?: number;
 }
 
 export default function DomainCheckerIndex() {
@@ -93,6 +95,9 @@ export default function DomainCheckerIndex() {
     const getCurrentDNSDisplay = () => {
         if (dnsLoading) return 'Loading DNS settings...';
         
+        // Safety check for null settings
+        if (!settings) return 'DNS settings not available';
+        
         const primary = settings.primary_dns || 'Auto';
         const secondary = settings.secondary_dns || '0.0.0.0';
         return `Primary: ${primary}, Secondary: ${secondary}`;
@@ -130,6 +135,16 @@ export default function DomainCheckerIndex() {
         const totalUrlsToCheck = urlList.length;
         setTotalUrls(totalUrlsToCheck);
 
+        // Show different progress behavior for large URL sets
+        const isLargeUrlSet = totalUrlsToCheck > 10000;
+        
+        if (isLargeUrlSet) {
+            toast.info("Large URL set detected", {
+                description: `Processing ${totalUrlsToCheck.toLocaleString()} URLs. This may take several minutes.`,
+                duration: 5000
+            });
+        }
+
         // Simulate progress updates
         const intervalId = setInterval(() => {
             setProgress(prev => {
@@ -147,8 +162,8 @@ export default function DomainCheckerIndex() {
         try {
             const response = await axios.post<CheckResponse>('/domain-checker/check-urls', {
                 urls,
-                primary_dns: settings.primary_dns,
-                secondary_dns: settings.secondary_dns,
+                primary_dns: settings?.primary_dns || '8.8.8.8',
+                secondary_dns: settings?.secondary_dns || '1.1.1.1',
                 command
             });
 
@@ -167,8 +182,19 @@ export default function DomainCheckerIndex() {
                 setProgress(100);
                 setCheckedUrls(response.data.total_urls);
                 
+                // Show different success messages based on processing method
+                const processingMethod = response.data.processing_method;
+                const estimatedTime = response.data.estimated_time;
+                
+                let description = `Checked ${response.data.total_urls.toLocaleString()} URLs with ${response.data.success_rate}% success rate`;
+                
+                if (processingMethod === 'optimized' && estimatedTime) {
+                    const minutes = Math.round(estimatedTime / 60);
+                    description += ` (Optimized processing, estimated ${minutes} minutes)`;
+                }
+                
                 toast.success("URLs checked successfully", {
-                    description: `Checked ${response.data.total_urls} URLs with ${response.data.success_rate}% success rate`,
+                    description: description,
                 });
             }
         } catch (error: any) {
