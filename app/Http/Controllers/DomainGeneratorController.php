@@ -5,11 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-class UrlGeneratorController extends Controller
+class DomainGeneratorController extends Controller
 {
     public function index()
     {
-        return Inertia::render('UrlGenerator/Index');
+        return Inertia::render('DomainGenerator/Index');
     }
 
     public function generate(Request $request)
@@ -31,11 +31,11 @@ class UrlGeneratorController extends Controller
         // Remove duplicates (case-insensitive)
         $uniqueUrls = [];
         $seenUrls = [];
-        
+
         foreach ($urls as $url) {
             $cleanUrl = trim($url);
             $lowerUrl = strtolower($cleanUrl);
-            
+
             if (!empty($cleanUrl) && !in_array($lowerUrl, $seenUrls)) {
                 $uniqueUrls[] = $cleanUrl;
                 $seenUrls[] = $lowerUrl;
@@ -43,7 +43,7 @@ class UrlGeneratorController extends Controller
         }
 
         $results = [];
-        
+
         if ($includeWww) {
             $wwwUrls = [];
             foreach ($uniqueUrls as $url) {

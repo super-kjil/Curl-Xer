@@ -24,7 +24,7 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Domain Checker',
         href: '/domain-checker',
-        // icon: Globe,
+        icon: Globe,
     },
 ];
 

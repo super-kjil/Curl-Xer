@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Globe, Settings, History, Link2 } from 'lucide-react';
+import { BookOpen, Folder, Globe, History, LayoutGrid, Link2, Settings } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -14,21 +14,22 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
+        title: 'Domain Generator',
+        href: '/domain-generator',
+        icon: Link2,
+    },
+    {
         title: 'Domain Checker',
         href: '/domain-checker',
         icon: Globe,
     },
-    {
-        title: 'URL Generator',
-        href: '/url-generator',
-        icon: Link2,
-    },
+
     {
         title: 'Domain History',
-        href: '/domain-checker/history',
+        href: '/domain-history/history',
         icon: History,
     },
-     {
+    {
         title: 'DNS Setting',
         href: '/domain-checker/settings',
         icon: Settings,

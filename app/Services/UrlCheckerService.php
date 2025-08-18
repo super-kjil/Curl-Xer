@@ -342,7 +342,7 @@ class UrlCheckerService
     /**
      * Optimized method for handling large URL sets
      */
-    public function checkURLsOptimized($urls, $primary_dns, $secondary_dns, $command = null, $batch_size = 500, $max_concurrent_batches = 3): array
+    public function checkURLsOptimized($urls, $primary_dns, $secondary_dns, $command = null, $batch_size = 500, $max_concurrent_batches = 3, $timeout = 30): array
     {
         $total_urls = count($urls);
         $results = [];
@@ -362,7 +362,7 @@ class UrlCheckerService
         // Process batches with controlled concurrency
         for ($i = 0; $i < $total_batches; $i += $max_concurrent_batches) {
             $current_batches = array_slice($url_batches, $i, $max_concurrent_batches);
-            $batch_results = $this->processBatchesConcurrently($current_batches, $primary_dns, $secondary_dns);
+            $batch_results = $this->processBatchesConcurrently($current_batches, $primary_dns, $secondary_dns, $timeout);
 
             // Merge results and free memory
             foreach ($batch_results as $batch_result) {
@@ -388,13 +388,13 @@ class UrlCheckerService
     /**
      * Process multiple batches concurrently
      */
-    private function processBatchesConcurrently($batches, $primary_dns, $secondary_dns): array
+    private function processBatchesConcurrently($batches, $primary_dns, $secondary_dns, $timeout = 30): array
     {
         $all_results = [];
         $processes = [];
 
         foreach ($batches as $batch_index => $batch) {
-            $process_results = $this->checkURLsParallel($batch, $primary_dns, $secondary_dns);
+            $process_results = $this->checkURLsParallel($batch, $primary_dns, $secondary_dns, null, null, $timeout);
             $all_results[] = $process_results;
         }
 
@@ -404,7 +404,7 @@ class UrlCheckerService
     /**
      * Original method for backward compatibility
      */
-    public function checkURLsParallel($urls, $primary_dns, $secondary_dns, $command = null, $batch_size = 100): array
+    public function checkURLsParallel($urls, $primary_dns, $secondary_dns, $command = null, $batch_size = 100, $timeout = 30): array
     {
         $results = [];
         $dns_servers = [$primary_dns, $secondary_dns];
@@ -434,8 +434,8 @@ class UrlCheckerService
                     CURLOPT_RETURNTRANSFER => true,
                     CURLOPT_FOLLOWLOCATION => true,
                     CURLOPT_MAXREDIRS => 5,
-                    CURLOPT_TIMEOUT => 30,
-                    CURLOPT_CONNECTTIMEOUT => 10,
+                    CURLOPT_TIMEOUT => $timeout,
+                    CURLOPT_CONNECTTIMEOUT => min(10, $timeout / 3),
                     CURLOPT_SSL_VERIFYPEER => false,
                     CURLOPT_SSL_VERIFYHOST => false,
                     CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -497,28 +497,28 @@ class UrlCheckerService
     }
 
     /**
-     * Calculate optimal batch size based on URL count
+     * Calculate optimal batch size based on URL count and user settings
      */
-    public function calculateOptimalBatchSize($url_count): int
+    public function calculateOptimalBatchSize($url_count, $user_batch_size = 100, $user_large_batch_size = 1000): int
     {
         if ($url_count <= 1000) {
-            return 100;
+            return $user_batch_size;
         } elseif ($url_count <= 10000) {
-            return 250;
+            return min(250, $user_batch_size);
         } elseif ($url_count <= 50000) {
-            return 500;
+            return min(500, $user_large_batch_size);
         } else {
-            return 1000; // For 90,000+ URLs
+            return $user_large_batch_size; // For 90,000+ URLs
         }
     }
 
     /**
      * Calculate estimated processing time
      */
-    public function estimateProcessingTime($url_count, $batch_size = 500): int
+    public function estimateProcessingTime($url_count, $batch_size = 500, $timeout = 30): int
     {
         $batches = ceil($url_count / $batch_size);
-        $seconds_per_batch = 30; // Conservative estimate
+        $seconds_per_batch = $timeout; // Use user's timeout setting
         return $batches * $seconds_per_batch;
     }
 

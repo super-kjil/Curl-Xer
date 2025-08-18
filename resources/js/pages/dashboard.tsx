@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Head } from '@inertiajs/react';
-import axios from 'axios';
-import { toast } from 'sonner';
-import { format, subDays, subMonths } from 'date-fns';
+import { format } from 'date-fns';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Chart } from '@/components/ui/chart';
@@ -18,8 +16,12 @@ import {
     CheckCircle, 
     Calendar,
     BarChart3,
-    Activity
+    Activity,
+    History,
+    ExternalLink,
+    RefreshCw
 } from 'lucide-react';
+import { useDashboardCache } from '@/hooks/use-dashboard-cache';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -44,54 +46,37 @@ interface DashboardStats {
 }
 
 export default function Dashboard() {
-    const [chartData, setChartData] = useState<ChartData[]>([]);
-    const [stats, setStats] = useState<DashboardStats>({
-        total_checks: 0,
-        avg_success_rate: 0,
-        total_urls: 0,
-    });
-    const [loading, setLoading] = useState(true);
+    const { 
+        chartData, 
+        stats, 
+        loading, 
+        error, 
+        lastFetched,
+        loadChartData, 
+        refreshDashboard,
+        successRateData,
+        urlCountData,
+        checksData,
+        cacheInfo
+    } = useDashboardCache();
+    
     const [filter, setFilter] = useState('7days');
     const [startDate, setStartDate] = useState<Date>();
     const [endDate, setEndDate] = useState<Date>();
-
-    useEffect(() => {
-        loadChartData();
-    }, [filter, startDate, endDate]);
-
-    const loadChartData = async () => {
-        try {
-            setLoading(true);
-            const params: any = { filter };
-            
-            if (filter === 'custom' && startDate && endDate) {
-                params.start_date = format(startDate, 'yyyy-MM-dd');
-                params.end_date = format(endDate, 'yyyy-MM-dd');
-            }
-
-            const response = await axios.get('/domain-checker/history/chart-data', { params });
-            
-            if (response.data.success) {
-                setChartData(response.data.data);
-                setStats({
-                    total_checks: response.data.total_checks,
-                    avg_success_rate: response.data.avg_success_rate,
-                    total_urls: response.data.total_urls,
-                });
-            }
-        } catch (error) {
-            console.error('Failed to load chart data:', error);
-            toast.error('Failed to load chart data');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleFilterChange = (newFilter: string) => {
         setFilter(newFilter);
         if (newFilter !== 'custom') {
             setStartDate(undefined);
             setEndDate(undefined);
+            // Load data for new filter
+            loadChartData(newFilter);
+        }
+    };
+
+    const handleDateChange = () => {
+        if (startDate && endDate) {
+            loadChartData('custom', format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd'));
         }
     };
 
@@ -105,21 +90,6 @@ export default function Dashboard() {
         }
     };
 
-    const successRateData = chartData.map(item => ({
-        name: item.name,
-        value: item.success_rate,
-    }));
-
-    const urlCountData = chartData.map(item => ({
-        name: item.name,
-        value: item.url_count,
-    }));
-
-    const checksData = chartData.map(item => ({
-        name: item.name,
-        value: item.checks,
-    }));
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
@@ -131,9 +101,24 @@ export default function Dashboard() {
                         <p className="text-muted-foreground">
                             Monitor your domain checking activity and performance
                         </p>
+                        {cacheInfo.isCacheValid && cacheInfo.cacheAge && (
+                            <Badge variant="outline" className="mt-2 text-xs">
+                                Cache: {Math.round(cacheInfo.cacheAge / 1000)}s ago
+                            </Badge>
+                        )}
                     </div>
                     
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <Button 
+                            variant="outline" 
+                            onClick={refreshDashboard}
+                            disabled={loading}
+                            title="Refresh dashboard data"
+                        >
+                            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                            Refresh
+                        </Button>
+                        
                         <Select value={filter} onValueChange={handleFilterChange}>
                             <SelectTrigger className="w-[180px]">
                                 <SelectValue placeholder="Select filter" />
@@ -160,10 +145,30 @@ export default function Dashboard() {
                                     placeholder="End date"
                                     className="w-[140px]"
                                 />
+                                <Button 
+                                    variant="outline" 
+                                    onClick={handleDateChange}
+                                    disabled={!startDate || !endDate}
+                                    size="sm"
+                                >
+                                    Apply
+                                </Button>
                             </div>
                         )}
                     </div>
                 </div>
+
+                {/* Error Display */}
+                {error && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
+                        <div className="flex items-center">
+                            <CheckCircle className="mr-2 h-4 w-4 text-red-500" />
+                            <p className="text-sm text-red-700 dark:text-red-300">
+                                {error}
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Stats Cards */}
                 <div className="grid gap-4 md:grid-cols-3">

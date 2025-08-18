@@ -15,8 +15,8 @@ import { toast } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'URL Generator',
-        href: '/url-generator',
+        title: 'Domain Generator',
+        href: '/domain-generator',
     },
 ];
 
@@ -242,7 +242,7 @@ export default function UrlGeneratorIndex() {
         setResults({});
 
         try {
-            const response = await axios.post<GenerateResponse>('/url-generator/generate', {
+            const response = await axios.post<GenerateResponse>('/domain-generator/generate', {
                 urls,
                 prefix: prefix || 'TRC',
                 date,
@@ -285,7 +285,7 @@ export default function UrlGeneratorIndex() {
         const groupCopyId = `group-${groupKey}`;
 
         return (
-            <Card className="dark:bg-gray-800">
+            <Card>
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <CardTitle className="flex items-center text-lg">
@@ -313,21 +313,21 @@ export default function UrlGeneratorIndex() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="max-h-96 overflow-y-auto rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
+                    <div className="max-h-96 overflow-y-auto rounded-lg">
                         <div className="space-y-2">
                             {urls.map((url, index) => {
                                 const itemCopyId = `${groupKey}-${index}`;
                                 return (
                                     <div
                                         key={index}
-                                        className="group flex items-center justify-between rounded-md bg-white p-2 transition-colors hover:bg-blue-50 dark:bg-gray-600 dark:hover:bg-gray-500"
+                                        className="group flex items-center justify-between rounded-md p-2 transition-colors"
                                     >
-                                        <span className="flex-1 font-mono text-sm break-all text-gray-700 dark:text-gray-200">{url}</span>
+                                        <span className="flex-1 font-mono text-sm break-all">{url}</span>
                                         <Button
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => copyToClipboard(url, itemCopyId)}
-                                            className="ml-3 p-1 opacity-0 transition-opacity group-hover:opacity-100"
+                                            className="ml-3 p-1"
                                         >
                                             {copiedItems.has(itemCopyId) ? (
                                                 <CopyCheck className="h-4 w-4 text-green-600" />
@@ -351,7 +351,7 @@ export default function UrlGeneratorIndex() {
 
             <div className="min-h-screen bg-background">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-blue-500 to-purple-600 py-8 text-white shadow-lg">
+                <div className=" py-8">
                     <div className="container mx-auto px-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -360,29 +360,14 @@ export default function UrlGeneratorIndex() {
                                 </h1>
                                 <p className="mt-2 opacity-90">Create formatted URLs with automatic www/non-www variants</p>
                             </div>
-                            {/* {hasStoredResults && (
-                                <div className="flex items-center space-x-4">
-                                    <Badge variant="secondary" className="bg-white/20 text-white border-white/20">
-                                        Results stored
-                                    </Badge>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={clearStoredResults}
-                                        className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                                    >
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Clear Storage
-                                    </Button>
-                                </div>
-                            )} */}
+
                         </div>
                     </div>
                 </div>
 
                 <div className="container mx-auto max-w-6xl px-4 py-8">
                     {/* Input Form */}
-                    <Card className="mb-8 dark:bg-gray-800">
+                    <Card className="mb-8">
                         <CardHeader>
                             <CardTitle className="flex items-center justify-between">
                                 URL Generator Settings
@@ -417,7 +402,7 @@ export default function UrlGeneratorIndex() {
                                         id="urls"
                                         value={urls}
                                         onChange={(e) => setUrls(e.target.value)}
-                                        className="h-32 resize-y dark:bg-gray-900"
+                                        className="h-32 resize-y"
                                         placeholder="Enter URLs here...&#10;example.com&#10;google.com&#10;github.com"
                                     />
                                 </div>
@@ -434,7 +419,7 @@ export default function UrlGeneratorIndex() {
                                                 id="prefix"
                                                 value={prefix}
                                                 onChange={(e) => setPrefix(e.target.value)}
-                                                className="pl-8 dark:bg-gray-900"
+                                                className="pl-8"
                                                 placeholder="TRC"
                                             />
                                             <span className="absolute top-2.5 left-3 text-gray-400 dark:text-gray-500">#</span>
@@ -452,7 +437,7 @@ export default function UrlGeneratorIndex() {
                                                 id="date"
                                                 value={date}
                                                 onChange={(e) => setDate(e.target.value)}
-                                                className="rounded-r-none dark:bg-gray-900"
+                                                className="rounded-r-none"
                                                 readOnly
                                             />
                                             <Button type="button" onClick={setTodayDate} className="rounded-l-none" variant="outline">
@@ -520,7 +505,7 @@ export default function UrlGeneratorIndex() {
 
                     {/* Summary */}
                     {totalGenerated > 0 && (
-                        <Card className="mt-6 dark:bg-gray-800">
+                        <Card className="mt-6">
                             <CardContent className="pt-6">
                                 <div className="flex items-center justify-center space-x-6 text-sm text-muted-foreground">
                                     <div className="text-center">
