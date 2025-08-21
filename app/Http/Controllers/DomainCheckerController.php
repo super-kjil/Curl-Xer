@@ -60,6 +60,11 @@ class DomainCheckerController extends Controller
         $large_batch_size = $userSettings?->large_batch_size ?? 1000;
         $timeout = $userSettings?->timeout ?? 30;
 
+        // Ensure all values are positive
+        $batch_size = max(1, $batch_size);
+        $large_batch_size = max(1, $large_batch_size);
+        $timeout = max(1, $timeout);
+
         // Log the settings being used
         \Log::info('Using user performance settings', [
             'user_id' => Auth::id(),
@@ -75,6 +80,12 @@ class DomainCheckerController extends Controller
             $batch_size = $this->urlCheckerService->calculateOptimalBatchSize($url_count, $batch_size, $large_batch_size);
             $estimated_time = $this->urlCheckerService->estimateProcessingTime($url_count, $batch_size, $timeout);
             
+            \Log::info('Using optimized processing method', [
+                'url_count' => $url_count,
+                'calculated_batch_size' => $batch_size,
+                'estimated_time_seconds' => $estimated_time
+            ]);
+            
             $results = $this->urlCheckerService->checkURLsOptimized(
                 $urls,
                 $primary_dns,
@@ -86,6 +97,11 @@ class DomainCheckerController extends Controller
             );
         } else {
             // Use standard method for smaller URL sets with user's batch size
+            \Log::info('Using standard processing method', [
+                'url_count' => $url_count,
+                'batch_size' => $batch_size
+            ]);
+            
             $results = $this->urlCheckerService->checkURLsParallel(
                 $urls,
                 $primary_dns,

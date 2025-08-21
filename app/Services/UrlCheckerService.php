@@ -344,6 +344,12 @@ class UrlCheckerService
      */
     public function checkURLsOptimized($urls, $primary_dns, $secondary_dns, $command = null, $batch_size = 500, $max_concurrent_batches = 3, $timeout = 30): array
     {
+        // Safety check: ensure batch_size is valid
+        if (empty($batch_size) || $batch_size <= 0) {
+            $batch_size = 500; // Default fallback
+            Log::warning("Invalid batch_size provided to checkURLsOptimized, using default", ['provided_batch_size' => $batch_size]);
+        }
+        
         $total_urls = count($urls);
         $results = [];
         $processed = 0;
@@ -394,7 +400,9 @@ class UrlCheckerService
         $processes = [];
 
         foreach ($batches as $batch_index => $batch) {
-            $process_results = $this->checkURLsParallel($batch, $primary_dns, $secondary_dns, null, null, $timeout);
+            // Pass the actual batch size (length of the current batch) instead of null
+            $batch_size = count($batch);
+            $process_results = $this->checkURLsParallel($batch, $primary_dns, $secondary_dns, null, $batch_size, $timeout);
             $all_results[] = $process_results;
         }
 
@@ -406,6 +414,12 @@ class UrlCheckerService
      */
     public function checkURLsParallel($urls, $primary_dns, $secondary_dns, $command = null, $batch_size = 100, $timeout = 30): array
     {
+        // Safety check: ensure batch_size is valid
+        if (empty($batch_size) || $batch_size <= 0) {
+            $batch_size = 100; // Default fallback
+            Log::warning("Invalid batch_size provided, using default", ['provided_batch_size' => $batch_size]);
+        }
+        
         $results = [];
         $dns_servers = [$primary_dns, $secondary_dns];
         $url_batches = array_chunk($urls, $batch_size);
@@ -501,6 +515,10 @@ class UrlCheckerService
      */
     public function calculateOptimalBatchSize($url_count, $user_batch_size = 100, $user_large_batch_size = 1000): int
     {
+        // Ensure user settings are valid
+        $user_batch_size = max(1, $user_batch_size);
+        $user_large_batch_size = max(1, $user_large_batch_size);
+        
         if ($url_count <= 1000) {
             return $user_batch_size;
         } elseif ($url_count <= 10000) {
