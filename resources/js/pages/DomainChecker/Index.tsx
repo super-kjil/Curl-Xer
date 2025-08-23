@@ -231,7 +231,7 @@ export default function DomainCheckerIndex() {
                             </div>
                             <div className="flex items-center space-x-4">
                                 <div className="hidden md:block">
-                                    <Badge variant="secondary" className="border-white/20 bg-neutral-100 dark:bg-neutral-80">
+                                    <Badge variant="secondary" className="border-white/20 bg-neutral-100 dark:bg-neutral-900">
                                         <Server className="mr-2 h-4 w-4" />
                                         <span className="font-mono text-sm">{getCurrentDNSDisplay()}</span>
                                     </Badge>
