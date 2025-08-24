@@ -1,6 +1,6 @@
-# Domina Checker - Laravel Application
+# CurlX - Laravel Application
 
-A modern, high-performance domain and URL checking application built with Laravel 11, Inertia.js, and React. This application allows users to check multiple URLs for accessibility, response times, and DNS configurations with advanced caching and performance optimizations.
+A modern, high-performance domain and URL checking application built with Laravel 11, Inertia.js, and React. This application features comprehensive user management, role-based permissions, and advanced domain checking capabilities with intelligent caching and performance optimizations.
 
 ## 🚀 Features
 
@@ -11,6 +11,14 @@ A modern, high-performance domain and URL checking application built with Larave
 - **History Management**: Comprehensive tracking of all URL checks with caching
 - **Dashboard Analytics**: Visual charts and statistics with intelligent caching
 - **User Authentication**: Secure user management with Laravel Breeze
+
+### Advanced User Management
+- **Role-Based Access Control (RBAC)**: Comprehensive permission system using Laravel Spatie
+- **Admin Panel**: Full user and role management interface
+- **User Management**: Create, edit, and delete regular users
+- **Role Management**: Create custom roles with specific permissions
+- **Permission System**: Granular control over user capabilities
+- **Profile Settings**: Role-based access to different settings sections
 
 ### Performance Optimizations
 - **Intelligent Caching**: localStorage-based caching for instant data loading
@@ -27,23 +35,264 @@ A modern, high-performance domain and URL checking application built with Larave
 - **State Management**: Custom hooks with localStorage caching
 - **Database**: MySQL/PostgreSQL with Eloquent ORM
 - **Authentication**: Laravel Breeze with Inertia.js
+- **Permissions**: Laravel Spatie Permission package
 
 ### Application Structure
 ```
 app/
 ├── Http/Controllers/          # API and web controllers
+│   ├── AdminController.php    # Admin panel management
+│   └── DomainCheckerController.php
 ├── Models/                    # Eloquent models
 ├── Services/                  # Business logic services
 ├── Jobs/                      # Background job processing
+├── Middleware/                # Custom middleware
+│   ├── AdminMiddleware.php    # Admin access control
+│   └── HandleInertiaRequests.php
 └── Providers/                 # Service providers
 
 resources/js/
 ├── components/                # Reusable React components
+│   ├── Admin/                 # Admin panel components
+│   │   ├── UserModal.tsx      # User management modal
+│   │   ├── RoleModal.tsx      # Role management modal
+│   │   └── DeleteConfirmationModal.tsx
+│   └── ui/                    # shadcn/ui components
 ├── hooks/                     # Custom React hooks
+│   └── use-permissions.tsx    # Permission checking hook
 ├── pages/                     # Page components
+│   ├── Admin/                 # Admin panel pages
+│   └── settings/              # Settings pages
 ├── stores/                    # State management
 └── types/                     # TypeScript type definitions
 ```
+
+## 🔐 Permission System
+
+The application implements a comprehensive role-based access control (RBAC) system using Laravel Spatie Permission package that allows you to:
+- Define roles (admin, user, etc.)
+- Assign permissions to roles
+- Control menu visibility based on user permissions
+- Protect routes with middleware
+- Conditionally render UI components
+
+### System Architecture
+
+#### **Database Structure**
+- **permissions** table: Stores individual permissions
+- **roles** table: Stores user roles
+- **model_has_roles** table: Links users to roles
+- **model_has_permissions** table: Links users to permissions
+- **role_has_permissions** table: Links roles to permissions
+
+#### **User Model**
+The `User` model uses the `HasRoles` trait from Spatie, providing methods like:
+- `hasRole('admin')`
+- `hasPermissionTo('manage_users')`
+- `assignRole('admin')`
+- `givePermissionTo('view_dashboard')`
+
+#### **Middleware**
+- **AdminMiddleware**: Protects admin-only routes
+- **HandleInertiaRequests**: Shares user roles and permissions with frontend
+
+### Role Structure
+
+#### **Default Roles**
+- **Admin**: Full system access with all permissions
+- **User**: Basic access with limited permissions
+
+#### **Core Permissions**
+- `view_dashboard`: Access to main dashboard
+- `view_domain_generator`: Access to domain generation tools
+- `view_domain_checker`: Access to URL checking functionality
+- `view_domain_history`: Access to history and analytics
+- `manage_users`: Create, edit, and delete users
+- `manage_roles`: Create and manage custom roles
+
+### Admin Panel Features
+- **User Management**: Full CRUD operations for regular users
+- **Role Management**: Create custom roles with specific permissions
+- **Statistics Dashboard**: Overview of users, roles, and permissions
+- **Security Controls**: Prevent admin role modification through admin panel
+- **Role-Based Access**: Admin users manage regular users, regular users manage themselves
+
+### Settings Access Control
+- **Admin Users**: Access to Profile, Password, and Appearance settings
+- **Regular Users**: Access to Appearance settings only
+- **Profile Management**: Admin users manage through admin panel, regular users through profile settings
+
+### Implementation Details
+
+#### **Backend (Laravel)**
+
+##### Database Seeder
+```php
+// database/seeders/DatabaseSeeder.php
+// Creates default roles and permissions
+// Assigns admin role to admin@curlx.com
+// Creates regular user with user role
+```
+
+##### Middleware Registration
+```php
+// bootstrap/app.php
+$middleware->alias([
+    'admin' => AdminMiddleware::class,
+]);
+```
+
+##### Route Protection
+```php
+// routes/web.php
+Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', function () {
+        return Inertia::render('Admin/Index');
+    })->name('index');
+});
+```
+
+#### **Frontend (React/TypeScript)**
+
+##### Permission Hook
+```typescript
+// resources/js/hooks/use-permissions.tsx
+const { hasRole, hasPermission, hasAnyRole, hasAnyPermission } = usePermissions();
+
+// Usage examples:
+if (hasRole('admin')) { /* admin logic */ }
+if (hasPermission('manage_users')) { /* user management logic */ }
+```
+
+##### Permission Gate Component
+```typescript
+// resources/js/components/permission-gate.tsx
+<PermissionGate permission="manage_users" role="admin">
+    <AdminPanel />
+</PermissionGate>
+```
+
+##### Menu Filtering
+```typescript
+// resources/js/components/app-sidebar.tsx
+const filteredMainNavItems = mainNavItems.filter(item => {
+    if (item.permission && !hasPermission(item.permission)) {
+        return false;
+    }
+    if (item.role && !hasRole(item.role)) {
+        return false;
+    }
+    return true;
+});
+```
+
+### Usage Examples
+
+#### **1. Checking Permissions in Controllers**
+```php
+public function index()
+{
+    if (!auth()->user()->hasPermissionTo('view_dashboard')) {
+        abort(403, 'Access denied');
+    }
+    
+    // Controller logic here
+}
+```
+
+#### **2. Frontend Components**
+```typescript
+import { usePermissions } from '@/hooks/use-permissions';
+
+function MyComponent() {
+    const { hasPermission } = usePermissions();
+    
+    return (
+        <div>
+            {hasPermission('manage_users') && (
+                <button>Manage Users</button>
+            )}
+        </div>
+    );
+}
+```
+
+#### **3. Route Protection**
+```php
+// Protect entire route groups
+Route::middleware(['admin'])->group(function () {
+    // Admin-only routes
+});
+
+// Protect individual routes
+Route::get('/admin/users', [UserController::class, 'index'])
+    ->middleware(['admin']);
+```
+
+### Adding New Permissions
+
+#### **1. Create Permission**
+```php
+use Spatie\Permission\Models\Permission;
+
+Permission::create(['name' => 'new_permission']);
+```
+
+#### **2. Assign to Role**
+```php
+$role = Role::findByName('admin');
+$role->givePermissionTo('new_permission');
+```
+
+#### **3. Update Frontend**
+```typescript
+// Add to NavItem interface
+{
+    title: 'New Feature',
+    href: '/new-feature',
+    permission: 'new_permission'
+}
+```
+
+### Adding New Roles
+
+#### **1. Create Role**
+```php
+use Spatie\Permission\Models\Role;
+
+$newRole = Role::create(['name' => 'moderator']);
+```
+
+#### **2. Assign Permissions**
+```php
+$newRole->givePermissionTo([
+    'view_dashboard',
+    'view_domain_checker',
+    'moderate_content'
+]);
+```
+
+#### **3. Assign to User**
+```php
+$user->assignRole('moderator');
+```
+
+### Security Considerations
+
+1. **Always verify permissions on the backend** - Frontend filtering is for UX only
+2. **Use middleware** for route protection
+3. **Validate permissions** in controllers before performing actions
+4. **Cache permissions** for performance (Spatie handles this automatically)
+5. **Regular audits** of role assignments and permissions
+
+### Best Practices
+
+1. **Use descriptive permission names** (e.g., 'manage_users' not 'mu')
+2. **Group related permissions** logically
+3. **Limit role proliferation** - prefer permissions over roles for fine-grained control
+4. **Document permission requirements** for each feature
+5. **Regular permission audits** to remove unused permissions
+6. **Use permission gates** in components for consistent access control
 
 ## 📊 Performance Features
 
@@ -91,7 +340,7 @@ Users can configure performance parameters to optimize for their environment:
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd Domina-Checker-Laravel
+   cd CurlX
    ```
 
 2. **Install PHP dependencies**
@@ -131,18 +380,29 @@ Users can configure performance parameters to optimize for their environment:
 
 ### Core Tables
 - **`users`**: User authentication and profiles
+- **`roles`**: User roles and permissions
+- **`permissions`**: System permissions
+- **`model_has_roles`**: User-role relationships
+- **`model_has_permissions`**: User-permission relationships
 - **`domain_checker_settings`**: User preferences and performance settings
 - **`domain_check_batches`**: Batch management for URL checking
 - **`domain_check_results`**: Individual URL check results
-- **`permissions`**: User permission management
 
 ### Key Relationships
+- Users can have multiple roles
+- Roles can have multiple permissions
 - Users have one settings record
 - Users have many check batches
 - Check batches have many results
-- Settings include DNS configuration and performance parameters
 
 ## 🚀 Usage
+
+### User Management
+1. **Admin Access**: Login with admin credentials
+2. **Admin Panel**: Navigate to `/admin` for user and role management
+3. **Create Users**: Add new users with specific roles
+4. **Manage Roles**: Create custom roles with specific permissions
+5. **User Control**: Edit user information and role assignments
 
 ### URL Checking
 1. Navigate to the Domain Checker page
@@ -166,6 +426,15 @@ Users can configure performance parameters to optimize for their environment:
 
 ## 🔍 API Endpoints
 
+### Admin Management
+- `GET /admin` - Admin panel dashboard
+- `POST /admin/users` - Create new user
+- `PUT /admin/users/{user}` - Update user
+- `DELETE /admin/users/{user}` - Delete user
+- `POST /admin/roles` - Create new role
+- `PUT /admin/roles/{role}` - Update role
+- `DELETE /admin/roles/{role}` - Delete role
+
 ### Domain Checker
 - `GET /domain-checker` - Main interface
 - `POST /domain-checker/check-urls` - Process URL checking
@@ -182,6 +451,9 @@ Users can configure performance parameters to optimize for their environment:
 - `GET /domain-checker/settings` - Settings page
 - `POST /domain-checker/settings` - Update settings
 - `GET /domain-checker/settings/detect-dns` - Auto-detect DNS
+- `GET /settings/profile` - Profile settings (admin only)
+- `GET /settings/password` - Password settings (admin only)
+- `GET /settings/appearance` - Appearance settings (all users)
 
 ### Dashboard
 - `GET /domain-history/history/chart-data` - Get chart data for dashboard
@@ -194,7 +466,7 @@ Users can configure performance parameters to optimize for their environment:
 php artisan test
 
 # Run specific test suite
-php artisan test --filter=PerformanceSettingsTest
+php artisan test --filter=PermissionTest
 
 # Run with coverage
 php artisan test --coverage
@@ -202,9 +474,44 @@ php artisan test --coverage
 
 ### Test Coverage
 - **Authentication**: User registration, login, password management
+- **Permissions**: Role-based access control and admin functionality
 - **Domain Checker**: URL processing, settings management
 - **Performance**: Settings validation and application
+- **Admin Panel**: User and role management functionality
 - **API Endpoints**: All controller methods and responses
+
+### Permission Testing
+```bash
+# Run permission tests
+php artisan test tests/Feature/PermissionTest.php
+
+# Manual testing steps:
+# 1. Login as admin@curlx.com / 123 (full access)
+# 2. Login as user@curlx.com / 123 (limited access)
+# 3. Verify menu items are filtered correctly
+# 4. Test admin route access at /admin
+# 5. Verify both User Management and Role Management tabs are accessible to admin users
+```
+
+### Troubleshooting Permissions
+
+#### **Common Issues**
+1. **Permissions not working**: Check if user has correct role assigned
+2. **Menu items not filtering**: Verify permission names match exactly
+3. **Middleware errors**: Ensure AdminMiddleware is registered in bootstrap/app.php
+4. **Database errors**: Run migrations and seeders
+
+#### **Debug Commands**
+```bash
+# Check user roles and permissions
+php artisan tinker
+$user = User::find(1);
+$user->getRoleNames();
+$user->getAllPermissions()->pluck('name');
+
+# Clear permission cache
+php artisan permission:cache-reset
+```
 
 ## 🚀 Performance Optimization
 
@@ -226,7 +533,9 @@ php artisan test --coverage
 - **Input Validation**: Comprehensive request validation
 - **SQL Injection Prevention**: Eloquent ORM with parameterized queries
 - **User Authentication**: Secure login with Laravel Breeze
-- **Permission Management**: Role-based access control
+- **Permission Management**: Role-based access control with Spatie
+- **Admin Middleware**: Route protection for admin-only functionality
+- **Role Validation**: Prevents unauthorized role modifications
 
 ## 🛠️ Development
 
@@ -252,6 +561,9 @@ php artisan migrate
 
 # Clear application cache
 php artisan cache:clear
+
+# Seed database with test data
+php artisan db:seed
 ```
 
 ## 📈 Monitoring and Logging
@@ -275,6 +587,16 @@ php artisan cache:clear
 - **Advanced Analytics**: Machine learning insights
 - **API Integration**: Third-party service connections
 - **Mobile App**: React Native companion application
+- **Advanced Permissions**: More granular permission controls
+- **Audit Logging**: Track all user actions and changes
+
+### Permission System Migration and Deployment
+
+1. **Backup database** before running migrations
+2. **Test permissions** in staging environment
+3. **Update existing users** with appropriate roles
+4. **Verify admin access** after deployment
+5. **Monitor logs** for permission-related errors
 
 ### Performance Improvements
 - **IndexedDB**: Larger cache storage for complex data
@@ -308,6 +630,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Inertia.js**: [https://inertiajs.com](https://inertiajs.com)
 - **React**: [https://reactjs.org/docs](https://reactjs.org/docs)
 - **Tailwind CSS**: [https://tailwindcss.com/docs](https://tailwindcss.com/docs)
+- **Laravel Spatie**: [https://spatie.be/docs/laravel-permission](https://spatie.be/docs/laravel-permission)
 
 ### Issues and Questions
 - Create an issue on GitHub for bugs or feature requests
@@ -321,6 +644,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **React Team**: For the powerful frontend library
 - **Tailwind CSS**: For the utility-first CSS framework
 - **shadcn/ui**: For the beautiful component library
+- **Spatie**: For the comprehensive permission package
 
 ---
 
