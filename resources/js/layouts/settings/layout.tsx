@@ -2,8 +2,8 @@ import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/react';
+import { type NavItem, type SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
 import { type PropsWithChildren } from 'react';
 
 const sidebarNavItems: NavItem[] = [
@@ -31,15 +31,32 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
     }
 
     const currentPath = window.location.pathname;
+    const { auth } = usePage<SharedData>().props;
+    
+    // Check if user has admin role
+    // Note: roles come as string array from backend (e.g., ['admin', 'user'])
+    const isAdmin = auth.user.roles && auth.user.roles.includes('admin');
+    
+    // Filter menu items based on user role
+    const visibleNavItems = isAdmin 
+        ? sidebarNavItems 
+        : sidebarNavItems.filter(item => item.title === 'Appearance');
 
     return (
         <div className="px-4 py-6">
-            <Heading title="Settings" description="Manage your profile and account settings" />
+            <Heading 
+                title="Settings" 
+                description={
+                    isAdmin 
+                        ? "Manage your profile and account settings" 
+                        : "Manage your appearance settings (Profile and Password management requires admin privileges)"
+                } 
+            />
 
             <div className="flex flex-col space-y-8 lg:flex-row lg:space-y-0 lg:space-x-12">
                 <aside className="w-full max-w-xl lg:w-48">
                     <nav className="flex flex-col space-y-1 space-x-0">
-                        {sidebarNavItems.map((item, index) => (
+                        {visibleNavItems.map((item, index) => (
                             <Button
                                 key={`${item.href}-${index}`}
                                 size="sm"
@@ -55,6 +72,14 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                             </Button>
                         ))}
                     </nav>
+                    
+                    {/* {!isAdmin && (
+                        <div className="mt-4 p-3 bg-muted rounded-lg">
+                            <p className="text-xs text-muted-foreground">
+                                Profile and Password management are restricted to admin users only.
+                            </p>
+                        </div>
+                    )} */}
                 </aside>
 
                 <Separator className="my-6 md:hidden" />

@@ -20,6 +20,8 @@ export interface NavItem {
     href: string;
     icon?: LucideIcon | null;
     isActive?: boolean;
+    permission?: string;
+    role?: string;
 }
 
 export interface SharedData {
@@ -38,5 +40,33 @@ export interface User {
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;
+    roles: string[]; // From HandleInertiaRequests: getRoleNames() returns string array
+    permissions: string[]; // From HandleInertiaRequests: getAllPermissions()->pluck('name') returns string array
     [key: string]: unknown; // This allows for additional properties...
+}
+
+// Helper function type for checking permissions
+export interface PermissionHelpers {
+    hasRole: (role: string) => boolean;
+    hasPermission: (permission: string) => boolean;
+    hasAnyRole: (roles: string[]) => boolean;
+    hasAnyPermission: (permissions: string[]) => boolean;
+}
+
+export interface Role {
+    id: number;
+    name: string;
+    guard_name: string;
+    permissions?: Permission[];
+    users?: User[];
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Permission {
+    id: number;
+    name: string;
+    guard_name: string;
+    created_at: string;
+    updated_at: string;
 }

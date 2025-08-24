@@ -22,6 +22,21 @@ class DomainCheckerSettingsController extends Controller
     {
         $settings = DomainCheckerSetting::where('user_id', Auth::id())->first();
         
+        // Auto-create default settings if they don't exist
+        if (!$settings) {
+            $serverDNS = $this->urlCheckerService->getServerDNSWithCache();
+            $settings = DomainCheckerSetting::create([
+                'user_id' => Auth::id(),
+                'primary_dns' => $serverDNS['primary'] ?? '8.8.8.8',
+                'secondary_dns' => $serverDNS['secondary'] ?? '1.1.1.1',
+                'batch_size' => 100,
+                'large_batch_size' => 1000,
+                'timeout' => 30,
+                'auto_detect_dns' => true,
+                'custom_dns_servers' => []
+            ]);
+        }
+        
         return Inertia::render('DomainChecker/Settings', [
             'settings' => $settings
         ]);
@@ -84,8 +99,11 @@ class DomainCheckerSettingsController extends Controller
         $userSettings = DomainCheckerSetting::where('user_id', Auth::id())->first();
         
         if (!$userSettings) {
-            $userSettings = new DomainCheckerSetting([
+            // Auto-insert default settings into database
+            $userSettings = DomainCheckerSetting::create([
                 'user_id' => Auth::id(),
+                'primary_dns' => $serverDNS['primary'] ?? '8.8.8.8',
+                'secondary_dns' => $serverDNS['secondary'] ?? '1.1.1.1',
                 'batch_size' => 100,
                 'large_batch_size' => 1000,
                 'timeout' => 30,

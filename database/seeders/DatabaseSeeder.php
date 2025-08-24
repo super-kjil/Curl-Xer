@@ -3,8 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
+// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,11 +17,53 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Admin',
-            'email' => 'admin@dnschecker.com',
-            'password' => bcrypt('P@ssw0rd807'), // Ensure to hash the password
-            'is_admin' => true, // Assuming you have an is_admin field to distinguish admin
+        // Create permissions
+        $permissions = [
+            'view_dashboard',
+            'view_domain_generator',
+            'view_domain_checker',
+            'view_domain_history',
+            'view_dns_settings',
+            'manage_users',
+            'manage_roles',
+            'manage_permissions',
+        ];
+
+        foreach ($permissions as $permission) {
+            Permission::create(['name' => $permission]);
+        }
+
+        // Create roles
+        $adminRole = Role::create(['name' => 'admin']);
+        $userRole = Role::create(['name' => 'user']);
+
+        // Assign all permissions to admin role
+        $adminRole->givePermissionTo(Permission::all());
+
+        // Assign basic permissions to user role
+        $userRole->givePermissionTo([
+            'view_dashboard',
+            'view_domain_generator',
+            'view_domain_checker',
+            'view_domain_history',
         ]);
+
+        // Create admin user and assign admin role
+        $adminUser = User::factory()->create([
+            'name' => 'Admin',
+            'email' => 'admin@curlx.com',
+            'password' => bcrypt('123'), // Ensure to hash the password
+        ]);
+
+        $adminUser->assignRole('admin');
+
+        // Create a regular user for testing
+        $regularUser = User::factory()->create([
+            'name' => 'User',
+            'email' => 'user@curlx.com',
+            'password' => bcrypt('123'),
+        ]);
+
+        $regularUser->assignRole('user');
     }
 }

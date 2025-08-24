@@ -1,9 +1,9 @@
 import InputError from '@/components/input-error';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Transition } from '@headlessui/react';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler, useRef } from 'react';
 
 import HeadingSmall from '@/components/heading-small';
@@ -19,6 +19,18 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Password() {
+    const { auth } = usePage<SharedData>().props;
+
+    // Check if user has admin role
+    // Note: roles come as string array from backend (e.g., ['admin', 'user'])
+    const isAdmin = auth.user.roles && auth.user.roles.includes('admin');
+    
+    // Redirect non-admin users to appearance settings
+    if (!isAdmin) {
+        window.location.href = '/settings/appearance';
+        return null;
+    }
+
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);
 

@@ -27,6 +27,16 @@ type ProfileForm = {
 export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: boolean; status?: string }) {
     const { auth } = usePage<SharedData>().props;
 
+    // Check if user has admin role
+    // Note: roles come as string array from backend (e.g., ['admin', 'user'])
+    const isAdmin = auth.user.roles && auth.user.roles.includes('admin');
+    
+    // Redirect non-admin users to appearance settings
+    if (!isAdmin) {
+        window.location.href = '/settings/appearance';
+        return null;
+    }
+
     const { data, setData, patch, errors, processing, recentlySuccessful } = useForm<Required<ProfileForm>>({
         name: auth.user.name,
         email: auth.user.email,

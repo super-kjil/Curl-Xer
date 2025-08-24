@@ -5,8 +5,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { AlertTriangle, BadgeCheckIcon, CheckCircle, Copy, Trash, XCircle, ChevronDown, ChevronUp, History, ClipboardList, RefreshCw } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { AlertTriangle, BadgeCheckIcon, CheckCircle, Copy, Trash, XCircle, ChevronDown, ChevronUp, History, ClipboardList, RefreshCw, Search, X } from 'lucide-react';
+import { useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import { useHistoryCache } from '@/hooks/use-history-cache';
 import { toast } from 'sonner';
 
@@ -65,6 +65,35 @@ export default function DomainCheckerHistory() {
     const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
     const [expandingItems, setExpandingItems] = useState<Set<string>>(new Set());
     const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set());
+    const [searchQuery, setSearchQuery] = useState<string>('');
+    const [showClearDialog, setShowClearDialog] = useState(false);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    // Highlight search terms in text
+    const highlightSearchTerm = useCallback((text: string, searchTerm: string) => {
+        if (!searchTerm.trim()) return text;
+        
+        const regex = new RegExp(`(${searchTerm})`, 'gi');
+        return text.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-800 px-1 rounded">$1</mark>');
+    }, []);
+
+    // Filter history based on search query
+    const filteredHistory = useMemo(() => {
+        if (!searchQuery.trim()) return history;
+        
+        const query = searchQuery.toLowerCase().trim();
+        return history.filter(item => {
+            // Search in command name
+            if (item.command.toLowerCase().includes(query)) return true;
+            
+            // Search in URLs within batches
+            return item.batches.some(batch => 
+                batch.results.some(result => 
+                    result.url.toLowerCase().includes(query)
+                )
+            );
+        });
+    }, [history, searchQuery]);
 
     const toggleExpanded = useCallback(async (command: string) => {
         // Prevent multiple rapid clicks
@@ -149,17 +178,64 @@ export default function DomainCheckerHistory() {
         }
         const urls = allResults.map((result) => `${result.url}      ${new Date(result.timestamp).toLocaleDateString()}`);
         const textToCopy = urls.join('\n');
-        navigator.clipboard
-            .writeText(textToCopy)
-            .then(() => {
-                toast.success('URLs with timestamps copied to clipboard');
-            })
-            .catch(() => {
-                toast.error('Failed to copy URLs');
-            });
+        
+        // Modern clipboard API with fallback
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard
+                .writeText(textToCopy)
+                .then(() => {
+                    toast.success('URLs with timestamps copied to clipboard');
+                })
+                .catch(() => {
+                    // Fallback to legacy method
+                    fallbackCopyTextToClipboard(textToCopy);
+                });
+        } else {
+            // Fallback for older browsers
+            fallbackCopyTextToClipboard(textToCopy);
+        }
     };
 
-    const [showClearDialog, setShowClearDialog] = useState(false);
+    // Fallback copy method for older browsers
+    const fallbackCopyTextToClipboard = (text: string) => {
+        try {
+            // Create temporary textarea element
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            const successful = document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            if (successful) {
+                toast.success('URLs with timestamps copied to clipboard');
+            } else {
+                toast.error('Failed to copy URLs. Please copy manually.');
+            }
+        } catch (err) {
+            toast.error('Failed to copy URLs. Please copy manually.');
+            console.error('Fallback copy failed:', err);
+        }
+    };
+
+
+    // Keyboard shortcut for search (Ctrl+F)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -183,7 +259,7 @@ export default function DomainCheckerHistory() {
                     <div className="mb-6 flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                             <h2 className="text-2xl font-semibold text-gray-800 dark:text-white flex items-center">
-                                <ClipboardList className="mr-2" /> Check History ({history.length} items)
+                                <ClipboardList className="mr-2" /> Check History ({filteredHistory.length} of {history.length} items)
                             </h2>
                             {/* {isCacheValid && cacheInfo.cacheAge && (
                                 // <Badge variant="outline" className="text-xs">
@@ -210,19 +286,69 @@ export default function DomainCheckerHistory() {
                         </div>
                     </div>
 
+                    {/* Search Bar */}
+                    <div className="mb-6">
+                        <div className="relative max-w-md">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                            <input
+                                ref={searchInputRef}
+                                type="text"
+                                placeholder="Search by filename, command, or URL... (Ctrl+F)"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Escape') {
+                                        setSearchQuery('');
+                                    }
+                                }}
+                                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                            />
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            )}
+                        </div>
+                        {searchQuery && (
+                            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                Found {filteredHistory.length} results for "{searchQuery}"
+                            </p>
+                        )}
+                    </div>
+
                     {loading ? (
                         <div className="py-12 text-center">
                             <i className="fas fa-spinner fa-spin mb-4 text-4xl text-gray-400"></i>
                             <p className="text-gray-500 dark:text-gray-400">Loading history...</p>
                         </div>
-                    ) : history.length === 0 ? (
+                    ) : filteredHistory.length === 0 ? (
                         <div className="py-12 text-center text-gray-500 dark:text-gray-400">
-                            <i className="fas fa-history mb-4 text-4xl"></i>
-                            <p>No history found. Start checking URLs to see results here.</p>
+                            {searchQuery ? (
+                                <>
+                                    <Search className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                                    <p>No results found for "{searchQuery}"</p>
+                                    <p className="text-sm mt-2">Try a different search term or clear the search</p>
+                                    <Button 
+                                        variant="outline" 
+                                        onClick={() => setSearchQuery('')}
+                                        className="mt-4"
+                                    >
+                                        Clear Search
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fas fa-history mb-4 text-4xl"></i>
+                                    <p>No history found. Start checking URLs to see results here.</p>
+                                </>
+                            )}
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {history.map((item, index) => (
+                            {filteredHistory.map((item, index) => (
                                 <div key={item.command} className="overflow-hidden rounded-lg bg-white shadow-lg dark:bg-gray-800">
                                     <Card className="p-6">
                                         <div className="flex items-center justify-between">
@@ -232,7 +358,11 @@ export default function DomainCheckerHistory() {
                                                         {item.command && (
                                                             <Badge variant="secondary" className="text-md text-black dark:text-white">
                                                                 <BadgeCheckIcon className="text-blue-700 mr-1" />
-                                                                {item.command}
+                                                                <span 
+                                                                    dangerouslySetInnerHTML={{ 
+                                                                        __html: highlightSearchTerm(item.command, searchQuery) 
+                                                                    }} 
+                                                                />
                                                             </Badge>
                                                         )}
                                                         <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -330,7 +460,12 @@ export default function DomainCheckerHistory() {
                                                             .map((result, resultIndex) => (
                                                                 <div key={resultIndex} className="flex items-start justify-between">
                                                                     <div className="flex-1 min-w-0">
-                                                                        <p className="text-sm font-medium truncate">{result.url}</p>
+                                                                        <p 
+                                                                            className="text-sm font-medium truncate"
+                                                                            dangerouslySetInnerHTML={{ 
+                                                                                __html: highlightSearchTerm(result.url, searchQuery) 
+                                                                            }} 
+                                                                        />
                                                                         <div className="mt-1 flex items-center text-xs">
                                                                             <span className={`inline-flex items-center px-2 py-0.5 rounded ${getStatusColorClass(result.status)}`}>
                                                                                 {result.status}

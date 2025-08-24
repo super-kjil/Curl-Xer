@@ -57,6 +57,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', [App\Http\Controllers\DomainGeneratorController::class, 'index'])->name('index');
         Route::post('/generate', [App\Http\Controllers\DomainGeneratorController::class, 'generate'])->name('generate');
     });
+
+    // Admin Routes
+    Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/', [App\Http\Controllers\AdminController::class, 'index'])->name('index');
+        
+        // User Management Routes
+        Route::post('/users', [App\Http\Controllers\AdminController::class, 'storeUser'])->name('users.store');
+        Route::put('/users/{user}', [App\Http\Controllers\AdminController::class, 'updateUser'])->name('users.update');
+        Route::delete('/users/{user}', [App\Http\Controllers\AdminController::class, 'deleteUser'])->name('users.delete');
+        Route::get('/users/{user}/data', [App\Http\Controllers\AdminController::class, 'getUserData'])->name('users.data');
+        
+        // Role Management Routes
+        Route::post('/roles', [App\Http\Controllers\AdminController::class, 'storeRole'])->name('roles.store');
+        Route::put('/roles/{role}', [App\Http\Controllers\AdminController::class, 'updateRole'])->name('roles.update');
+        Route::delete('/roles/{role}', [App\Http\Controllers\AdminController::class, 'deleteRole'])->name('roles.delete');
+        Route::get('/roles/{role}/data', [App\Http\Controllers\AdminController::class, 'getRoleData'])->name('roles.data');
+    });
 });
 
 require __DIR__ . '/settings.php';
