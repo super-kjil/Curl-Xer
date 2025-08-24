@@ -55,12 +55,12 @@ export default function Admin({ users, roles, permissions, stats, flash }: Admin
     const [userModalOpen, setUserModalOpen] = useState(false);
     const [roleModalOpen, setRoleModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-    
+
     // Modal data
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [selectedRole, setSelectedRole] = useState<Role | null>(null);
     const [deleteItem, setDeleteItem] = useState<{ type: 'user' | 'role'; name: string; url: string } | null>(null);
-    
+
     // Modal modes
     const [userModalMode, setUserModalMode] = useState<'create' | 'edit'>('create');
     const [roleModalMode, setRoleModalMode] = useState<'create' | 'edit'>('create');
@@ -162,7 +162,7 @@ export default function Admin({ users, roles, permissions, stats, flash }: Admin
                                     <p className="text-xs text-muted-foreground">Manageable users</p>
                                 </CardContent>
                             </Card>
-                            
+
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">Active Users</CardTitle>
@@ -173,7 +173,7 @@ export default function Admin({ users, roles, permissions, stats, flash }: Admin
                                     <p className="text-xs text-muted-foreground">Active accounts</p>
                                 </CardContent>
                             </Card>
-                            
+
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">Admin Users</CardTitle>
@@ -184,7 +184,7 @@ export default function Admin({ users, roles, permissions, stats, flash }: Admin
                                     <p className="text-xs text-muted-foreground">Use profile settings</p>
                                 </CardContent>
                             </Card>
-                            
+
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">New Users</CardTitle>
@@ -218,18 +218,18 @@ export default function Admin({ users, roles, permissions, stats, flash }: Admin
                                                 </div>
                                             </div>
                                             <div className="flex items-center space-x-2">
-                                                                                                 <Badge variant={user.roles.some((role: any) => role.name === 'admin') ? 'default' : 'secondary'}>
-                                                     {user.roles[0]?.name || 'No Role'}
-                                                 </Badge>
-                                                <Button 
-                                                    variant="outline" 
+                                                <Badge variant={user.roles.some((role: any) => role.name === 'admin') ? 'default' : 'secondary'}>
+                                                    {user.roles[0]?.name || 'No Role'}
+                                                </Badge>
+                                                <Button
+                                                    variant="outline"
                                                     size="sm"
                                                     onClick={() => handleEditUser(user)}
                                                 >
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
-                                                <Button 
-                                                    variant="outline" 
+                                                <Button
+                                                    variant="outline"
                                                     size="sm"
                                                     onClick={() => handleDeleteUser(user)}
                                                 >
@@ -269,7 +269,7 @@ export default function Admin({ users, roles, permissions, stats, flash }: Admin
                                     <p className="text-xs text-muted-foreground">Editable roles</p>
                                 </CardContent>
                             </Card>
-                            
+
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">Admin Users</CardTitle>
@@ -280,7 +280,7 @@ export default function Admin({ users, roles, permissions, stats, flash }: Admin
                                     <p className="text-xs text-muted-foreground">Use profile settings</p>
                                 </CardContent>
                             </Card>
-                            
+
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">Regular Users</CardTitle>
@@ -291,7 +291,7 @@ export default function Admin({ users, roles, permissions, stats, flash }: Admin
                                     <p className="text-xs text-muted-foreground">Manageable users</p>
                                 </CardContent>
                             </Card>
-                            
+
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">Permissions</CardTitle>
@@ -304,7 +304,7 @@ export default function Admin({ users, roles, permissions, stats, flash }: Admin
                             </Card>
                         </div>
 
-                                                <Card>
+                        <Card>
                             <CardHeader>
                                 <CardTitle>Roles</CardTitle>
                                 <CardDescription>
@@ -342,8 +342,8 @@ export default function Admin({ users, roles, permissions, stats, flash }: Admin
                                                 <Badge variant="secondary">
                                                     {role.users?.length || 0} users
                                                 </Badge>
-                                                <Button 
-                                                    variant="outline" 
+                                                <Button
+                                                    variant="outline"
                                                     size="sm"
                                                     onClick={() => handleEditRole(role)}
                                                 >
