@@ -82,6 +82,8 @@ class PermissionTest extends TestCase
             'view_domain_generator',
             'view_domain_checker',
             'view_domain_history',
+            'manage_users', // Add this permission
+            'manage_roles', // Add this permission
         ];
 
         foreach ($permissions as $permission) {
@@ -90,7 +92,12 @@ class PermissionTest extends TestCase
 
         // Create user role
         $userRole = Role::create(['name' => 'user']);
-        $userRole->givePermissionTo($permissions);
+        $userRole->givePermissionTo([
+            'view_dashboard',
+            'view_domain_generator',
+            'view_domain_checker',
+            'view_domain_history',
+        ]);
 
         // Create regular user
         $regularUser = User::factory()->create();

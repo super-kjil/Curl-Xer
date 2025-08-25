@@ -19,6 +19,8 @@ class PerformanceSettingsTest extends TestCase
 
         // Test saving performance settings
         $response = $this->postJson('/domain-checker/settings', [
+            'primary_dns' => '8.8.8.8',
+            'secondary_dns' => '1.1.1.1',
             'batch_size' => 200,
             'large_batch_size' => 1500,
             'timeout' => 45,
@@ -31,6 +33,8 @@ class PerformanceSettingsTest extends TestCase
         // Verify settings are saved in database
         $this->assertDatabaseHas('domain_checker_settings', [
             'user_id' => $user->id,
+            'primary_dns' => '8.8.8.8',
+            'secondary_dns' => '1.1.1.1',
             'batch_size' => 200,
             'large_batch_size' => 1500,
             'timeout' => 45
@@ -71,29 +75,32 @@ class PerformanceSettingsTest extends TestCase
 
         // Test invalid batch size
         $response = $this->postJson('/domain-checker/settings', [
+            'primary_dns' => '8.8.8.8',
             'batch_size' => 0, // Invalid: must be >= 1
             'large_batch_size' => 1500,
             'timeout' => 45
         ]);
 
-        $response->assertStatus(400);
+        $response->assertStatus(422); // Laravel returns 422 for validation errors
 
         // Test invalid large batch size
         $response = $this->postJson('/domain-checker/settings', [
+            'primary_dns' => '8.8.8.8',
             'batch_size' => 200,
             'large_batch_size' => 100, // Invalid: must be >= 500
             'timeout' => 45
         ]);
 
-        $response->assertStatus(400);
+        $response->assertStatus(422); // Laravel returns 422 for validation errors
 
         // Test invalid timeout
         $response = $this->postJson('/domain-checker/settings', [
+            'primary_dns' => '8.8.8.8',
             'batch_size' => 200,
             'large_batch_size' => 1500,
             'timeout' => 2 // Invalid: must be >= 5
         ]);
 
-        $response->assertStatus(400);
+        $response->assertStatus(422); // Laravel returns 422 for validation errors
     }
 }
