@@ -1,24 +1,41 @@
+import React from 'react';
+import { Link } from '@inertiajs/react';
+import { type NavItem } from '@/types';
+import { 
+    Home, 
+    Globe, 
+    Search, 
+    History, 
+    Settings, 
+    Users, 
+    Shield
+} from 'lucide-react';
+import AppLogo from './app-logo';
+import { usePermissions } from '@/hooks/use-permissions';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { type NavItem } from '@/types';
-import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, Globe, History, LayoutGrid, Link2, Settings, Users, Shield } from 'lucide-react';
-import AppLogo from './app-logo';
-import { usePermissions } from '@/hooks/use-permissions';
+import { 
+    Sidebar, 
+    SidebarContent, 
+    SidebarFooter, 
+    SidebarHeader, 
+    SidebarMenu, 
+    SidebarMenuButton, 
+    SidebarMenuItem 
+} from '@/components/ui/sidebar';
 
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: '/dashboard',
-        icon: LayoutGrid,
+        icon: Home,
         permission: 'view_dashboard',
     },
     {
         title: 'Domain Generator',
         href: '/domain-generator',
-        icon: Link2,
+        icon: Search,
         permission: 'view_domain_generator',
     },
     {
@@ -52,12 +69,12 @@ const footerNavItems: NavItem[] = [
     {
         title: 'Repository',
         href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
+        icon: Users,
     },
     {
         title: 'Documentation',
         href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
+        icon: Home,
     },
 ];
 

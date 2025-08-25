@@ -25,13 +25,14 @@ const sidebarNavItems: NavItem[] = [
 ];
 
 export default function SettingsLayout({ children }: PropsWithChildren) {
+    const { auth } = usePage<SharedData>().props;
+    
     // When server-side rendering, we only render the layout on the client...
     if (typeof window === 'undefined') {
         return null;
     }
 
     const currentPath = window.location.pathname;
-    const { auth } = usePage<SharedData>().props;
     
     // Check if user has admin role
     // Note: roles come as string array from backend (e.g., ['admin', 'user'])

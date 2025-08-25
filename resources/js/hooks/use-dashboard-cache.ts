@@ -123,7 +123,7 @@ export const useDashboardCache = () => {
         setError(null);
 
         try {
-            const params: any = { filter };
+            const params: Record<string, string | undefined> = { filter };
             
             if (filter === 'custom' && startDate && endDate) {
                 params.start_date = startDate;
@@ -154,9 +154,9 @@ export const useDashboardCache = () => {
                 setError('Failed to load dashboard data');
                 toast.error('Failed to load dashboard data');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to load dashboard data:', error);
-            const errorMessage = error.response?.data?.message || 'An unexpected error occurred';
+            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
             setError(errorMessage);
             toast.error('Failed to load dashboard data');
         } finally {

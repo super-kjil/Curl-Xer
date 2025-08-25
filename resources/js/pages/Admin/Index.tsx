@@ -38,8 +38,15 @@ interface AdminPageProps {
     };
 }
 
-export default function Admin({ users, roles, permissions, stats, flash }: AdminPageProps) {
-    const { flash: pageFlash } = usePage().props as any;
+interface PageProps {
+    flash?: {
+        success?: string;
+        error?: string;
+    };
+}
+
+export default function Admin({ users, roles, permissions, stats }: AdminPageProps) {
+    const { flash: pageFlash } = usePage<PageProps>().props;
 
     // Show flash messages
     useEffect(() => {
@@ -96,15 +103,6 @@ export default function Admin({ users, roles, permissions, stats, flash }: Admin
         setRoleModalMode('edit');
         setSelectedRole(role);
         setRoleModalOpen(true);
-    };
-
-    const handleDeleteRole = (role: Role) => {
-        setDeleteItem({
-            type: 'role',
-            name: role.name,
-            url: `/admin/roles/${role.id}`,
-        });
-        setDeleteModalOpen(true);
     };
 
     const closeUserModal = () => {
@@ -218,7 +216,7 @@ export default function Admin({ users, roles, permissions, stats, flash }: Admin
                                                 </div>
                                             </div>
                                             <div className="flex items-center space-x-2">
-                                                <Badge variant={user.roles.some((role: any) => role.name === 'admin') ? 'default' : 'secondary'}>
+                                                <Badge variant={user.roles.some((role: { name: string }) => role.name === 'admin') ? 'default' : 'secondary'}>
                                                     {user.roles[0]?.name || 'No Role'}
                                                 </Badge>
                                                 <Button

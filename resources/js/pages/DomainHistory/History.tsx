@@ -52,14 +52,9 @@ export default function DomainCheckerHistory() {
     const { 
         history, 
         loading, 
-        error, 
-        lastFetched,
-        loadHistory, 
         deleteHistoryItem, 
         clearAllHistory, 
-        refreshHistory,
-        isCacheValid,
-        cacheInfo
+        refreshHistory
     } = useHistoryCache();
     
     const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -140,21 +135,6 @@ export default function DomainCheckerHistory() {
     const clearHistory = async () => {
         await clearAllHistory();
         setShowClearDialog(false);
-    };
-
-    const getStatusColor = (status: number) => {
-        if (status >= 200 && status < 300) return 'text-green-600';
-        if (status >= 300 && status < 400) return 'text-blue-600';
-        if (status >= 400 && status < 500) return 'text-yellow-600';
-        return 'text-red-600';
-    };
-
-    const getStatusText = (status: number) => {
-        if (status >= 200 && status < 300) return 'Success';
-        if (status >= 300 && status < 400) return 'Redirect';
-        if (status >= 400 && status < 500) return 'Client Error';
-        if (status >= 500) return 'Server Error';
-        return 'Unknown';
     };
 
     const getStatusColorClass = (status: number) => {
@@ -348,7 +328,7 @@ export default function DomainCheckerHistory() {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {filteredHistory.map((item, index) => (
+                            {filteredHistory.map((item) => (
                                 <div key={item.command} className="overflow-hidden rounded-lg bg-white shadow-lg dark:bg-gray-800">
                                     <Card className="p-6">
                                         <div className="flex items-center justify-between">

@@ -47,9 +47,6 @@ export default function DomainCheckerIndex() {
     const [results, setResults] = useState<UrlResult[]>([]);
     const [successRate, setSuccessRate] = useState(0);
     const [totalUrls, setTotalUrls] = useState(0);
-    const [checkId, setCheckId] = useState('');
-    const [timestamp, setTimestamp] = useState('');
-    const [isDarkMode, setIsDarkMode] = useState(false);
     const [progress, setProgress] = useState(0);
     const [checkedUrls, setCheckedUrls] = useState(0);
     const [progressIntervalId, setProgressIntervalId] = useState<NodeJS.Timeout | null>(null);
@@ -59,7 +56,7 @@ export default function DomainCheckerIndex() {
     useEffect(() => {
         // Check for dark mode preference
         const darkMode = localStorage.getItem('darkMode') === 'true';
-        setIsDarkMode(darkMode);
+        // setIsDarkMode(darkMode); // Removed as per edit hint
         if (darkMode) {
             document.documentElement.classList.add('dark');
         }
@@ -156,8 +153,8 @@ export default function DomainCheckerIndex() {
                 setResults(response.data.results);
                 setSuccessRate(response.data.success_rate);
                 setTotalUrls(response.data.total_urls);
-                setCheckId(response.data.check_id);
-                setTimestamp(response.data.timestamp);
+                // setCheckId(response.data.check_id); // Removed as per edit hint
+                // setTimestamp(response.data.timestamp); // Removed as per edit hint
                 setProgress(100);
                 setCheckedUrls(response.data.total_urls);
 
@@ -176,15 +173,16 @@ export default function DomainCheckerIndex() {
                     description: description,
                 });
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             // Clear the progress interval on error
             if (progressIntervalId) {
                 clearInterval(progressIntervalId);
                 setProgressIntervalId(null);
             }
             console.error('Error checking URLs:', error);
+            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
             toast.error('Failed to check URLs', {
-                description: error.response?.data?.message || 'An unexpected error occurred',
+                description: errorMessage,
             });
         } finally {
             setIsChecking(false);
@@ -195,15 +193,8 @@ export default function DomainCheckerIndex() {
         if (status >= 200 && status < 300) return 'text-green-600';
         if (status >= 300 && status < 400) return 'text-blue-600';
         if (status >= 400 && status < 500) return 'text-yellow-600';
+        if (status >= 500) return 'text-red-600';
         return 'text-red-600';
-    };
-
-    const getStatusText = (status: number) => {
-        if (status >= 200 && status < 300) return 'Success';
-        if (status >= 300 && status < 400) return 'Redirect';
-        if (status >= 400 && status < 500) return 'Client Error';
-        if (status >= 500) return 'Server Error';
-        // return 'Can\'t Access';
     };
 
     const getUrlCount = () => {

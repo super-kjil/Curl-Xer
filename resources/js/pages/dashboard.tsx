@@ -14,11 +14,7 @@ import {
     TrendingUp, 
     Globe, 
     CheckCircle, 
-    Calendar,
-    BarChart3,
     Activity,
-    History,
-    ExternalLink,
     RefreshCw
 } from 'lucide-react';
 import { useDashboardCache } from '@/hooks/use-dashboard-cache';
@@ -30,32 +26,15 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-interface ChartData {
-    name: string;
-    success_rate: number;
-    url_count: number;
-    success_urls: number;
-    failed_urls: number;
-    checks: number;
-}
-
-interface DashboardStats {
-    total_checks: number;
-    avg_success_rate: number;
-    total_urls: number;
-}
-
 export default function Dashboard() {
     const { 
         chartData, 
         stats, 
         loading, 
         error, 
-        lastFetched,
         loadChartData, 
         refreshDashboard,
         successRateData,
-        urlCountData,
         checksData,
         cacheInfo
     } = useDashboardCache();

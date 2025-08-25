@@ -51,19 +51,19 @@ const COMPRESSION_THRESHOLD = 1000; // Compress if more than 1000 items
 
 // IndexedDB implementation
 class IndexedDBCache {
-    private dbName = 'DomainCheckerCache';
+    private dbName = 'HistoryCacheDB';
+    private storeName = 'cache';
     private version = 1;
-    private storeName = 'history';
 
-    async initDB(): Promise<IDBDatabase> {
+    private async initDB(): Promise<IDBDatabase> {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.version);
             
             request.onerror = () => reject(request.error);
             request.onsuccess = () => resolve(request.result);
             
-            request.onupgradeneeded = (event) => {
-                const db = (event.target as IDBOpenDBRequest).result;
+            request.onupgradeneeded = () => {
+                const db = request.result;
                 if (!db.objectStoreNames.contains(this.storeName)) {
                     db.createObjectStore(this.storeName, { keyPath: 'key' });
                 }
@@ -71,7 +71,7 @@ class IndexedDBCache {
         });
     }
 
-    async set(key: string, value: any): Promise<void> {
+    async set(key: string, value: unknown): Promise<void> {
         const db = await this.initDB();
         const transaction = db.transaction([this.storeName], 'readwrite');
         const store = transaction.objectStore(this.storeName);
@@ -83,7 +83,7 @@ class IndexedDBCache {
         });
     }
 
-    async get(key: string): Promise<any> {
+    async get(key: string): Promise<unknown> {
         const db = await this.initDB();
         const transaction = db.transaction([this.storeName], 'readonly');
         const store = transaction.objectStore(this.storeName);
@@ -213,9 +213,9 @@ export const useHistoryCache = () => {
                 // Small dataset: Use localStorage
                 try {
                     localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-                } catch (localStorageError) {
+                } catch {
                     // If localStorage fails, try IndexedDB even for small data
-                    console.warn('localStorage failed, falling back to IndexedDB:', localStorageError);
+                    console.warn('localStorage failed, falling back to IndexedDB:');
                     await dbCache.set(CACHE_KEY, cacheData);
                 }
             }
@@ -235,7 +235,7 @@ export const useHistoryCache = () => {
                 // Try localStorage first
                 try {
                     localStorage.setItem(CACHE_KEY, JSON.stringify(minimalData));
-                } catch (localStorageError) {
+                } catch {
                     // If localStorage still fails, try IndexedDB
                     await dbCache.set(CACHE_KEY, minimalData);
                 }
@@ -268,26 +268,6 @@ export const useHistoryCache = () => {
             }
         } catch (error) {
             console.warn('Failed to save chunks:', error);
-        }
-    }, []);
-
-    // Load data from chunks for better performance
-    const loadFromChunks = useCallback(async (): Promise<GroupedHistoryItem[] | null> => {
-        try {
-            const meta = await dbCache.get(`${CACHE_KEY}_chunks_meta`);
-            if (!meta || meta.version !== CACHE_VERSION) return null;
-
-            const allData: GroupedHistoryItem[] = [];
-            for (let i = 0; i < meta.totalChunks; i++) {
-                const chunk = await dbCache.get(`${CACHE_KEY}_chunk_${i}`);
-                if (chunk) {
-                    allData.push(...chunk);
-                }
-            }
-
-            return allData;
-        } catch {
-            return null;
         }
     }, []);
 
@@ -353,9 +333,9 @@ export const useHistoryCache = () => {
                 setError('Failed to load history data');
                 toast.error('Failed to load history');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to load history:', error);
-            const errorMessage = error.response?.data?.message || 'An unexpected error occurred';
+            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
             setError(errorMessage);
             toast.error('Failed to load history');
         } finally {
@@ -379,7 +359,7 @@ export const useHistoryCache = () => {
             } else {
                 toast.error('Failed to delete history item');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to delete history item:', error);
             toast.error('Failed to delete history item');
         }
@@ -398,7 +378,7 @@ export const useHistoryCache = () => {
             } else {
                 toast.error('Failed to clear history');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to clear history:', error);
             toast.error('Failed to clear history');
         }

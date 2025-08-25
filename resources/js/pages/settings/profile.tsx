@@ -1,7 +1,7 @@
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Transition } from '@headlessui/react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useEffect } from 'react';
 
 import DeleteUser from '@/components/delete-user';
 import HeadingSmall from '@/components/heading-small';
@@ -24,23 +24,27 @@ type ProfileForm = {
     email: string;
 };
 
-export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: boolean; status?: string }) {
+export default function Profile() {
     const { auth } = usePage<SharedData>().props;
-
-    // Check if user has admin role
-    // Note: roles come as string array from backend (e.g., ['admin', 'user'])
-    const isAdmin = auth.user.roles && auth.user.roles.includes('admin');
-    
-    // Redirect non-admin users to appearance settings
-    if (!isAdmin) {
-        window.location.href = '/settings/appearance';
-        return null;
-    }
-
     const { data, setData, patch, errors, processing, recentlySuccessful } = useForm<Required<ProfileForm>>({
         name: auth.user.name,
         email: auth.user.email,
     });
+    
+    // Check if user has admin role
+    const isAdmin = auth.user.roles && auth.user.roles.includes('admin');
+    
+    // If not admin, redirect to appearance settings
+    useEffect(() => {
+        if (!isAdmin && typeof window !== 'undefined') {
+            window.location.href = '/settings/appearance';
+        }
+    }, [isAdmin]);
+
+    // Don't render if not admin
+    if (!isAdmin) {
+        return null;
+    }
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -92,7 +96,7 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                             <InputError className="mt-2" message={errors.email} />
                         </div>
 
-                        {mustVerifyEmail && auth.user.email_verified_at === null && (
+                        {auth.user.email_verified_at === null && (
                             <div>
                                 <p className="-mt-4 text-sm text-muted-foreground">
                                     Your email address is unverified.{' '}
@@ -106,7 +110,7 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                                     </Link>
                                 </p>
 
-                                {status === 'verification-link-sent' && (
+                                {auth.status === 'verification-link-sent' && (
                                     <div className="mt-2 text-sm font-medium text-green-600">
                                         A new verification link has been sent to your email address.
                                     </div>

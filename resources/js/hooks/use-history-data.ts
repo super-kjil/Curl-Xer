@@ -1,36 +1,13 @@
-import { useCallback, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { 
-    useHistoryStore, 
-    useHistoryData, 
-    useHistoryLoading, 
-    useHistoryError,
-    useHistoryStats 
-} from '@/stores/useHistoryStore';
 
 export const useHistoryData = () => {
-    const {
-        history,
-        loading,
-        error,
-        lastFetched,
-        setHistory,
-        setLoading,
-        setError,
-        setLastFetched,
-        removeHistoryItem,
-        clearHistory,
-        isCacheValid,
-        invalidateCache,
-    } = useHistoryStore();
+    const [history, setHistory] = useState<GroupedHistoryItem[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const loadHistory = useCallback(async (forceRefresh = false) => {
-        // Check if cache is valid and we don't need to force refresh
-        if (!forceRefresh && isCacheValid()) {
-            return; // Use cached data
-        }
-
+    const loadHistory = useCallback(async () => {
         setLoading(true);
         setError(null);
 
@@ -44,15 +21,15 @@ export const useHistoryData = () => {
                 setError('Failed to load history data');
                 toast.error('Failed to load history');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to load history:', error);
-            const errorMessage = error.response?.data?.message || 'An unexpected error occurred';
+            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
             setError(errorMessage);
             toast.error('Failed to load history');
         } finally {
             setLoading(false);
         }
-    }, [setHistory, setLoading, setError, isCacheValid]);
+    }, []);
 
     const deleteHistoryItem = useCallback(async (command: string) => {
         try {
@@ -61,51 +38,47 @@ export const useHistoryData = () => {
             });
             
             if (response.data.success) {
-                removeHistoryItem(command);
+                setHistory(prev => prev.filter(item => item.command !== command));
                 toast.success('History item deleted');
             } else {
                 toast.error('Failed to delete history item');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to delete history item:', error);
             toast.error('Failed to delete history item');
         }
-    }, [removeHistoryItem]);
+    }, []);
 
     const clearAllHistory = useCallback(async () => {
         try {
             const response = await axios.delete('/domain-history/history/clear');
             
             if (response.data.success) {
-                clearHistory();
+                setHistory([]);
                 toast.success('All history cleared');
             } else {
                 toast.error('Failed to clear history');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to clear history:', error);
             toast.error('Failed to clear history');
         }
-    }, [clearHistory]);
+    }, []);
 
     const refreshHistory = useCallback(() => {
-        invalidateCache();
-        loadHistory(true);
-    }, [invalidateCache, loadHistory]);
+        loadHistory();
+    }, [loadHistory]);
 
-    // Auto-load history on mount if cache is invalid
+    // Auto-load history on mount
     useEffect(() => {
-        if (!isCacheValid()) {
-            loadHistory();
-        }
-    }, [loadHistory, isCacheValid]);
+        loadHistory();
+    }, [loadHistory]);
 
     return {
         // Data
         history,
         loading,
         error,
-        lastFetched,
         
         // Actions
         loadHistory,
@@ -121,8 +94,8 @@ export const useHistoryData = () => {
         itemCount: history.length,
         
         // Cache info
-        isCacheValid: isCacheValid(),
-        cacheAge: lastFetched ? Date.now() - lastFetched : null,
+        isCacheValid: true, // No cache implementation, so always true
+        cacheAge: null,
     };
 };
 

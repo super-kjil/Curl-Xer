@@ -201,7 +201,7 @@ export default function UrlGeneratorIndex() {
                     return newSet;
                 });
             }, 2000);
-        } catch (err) {
+        } catch {
             // Fallback for older browsers
             const textarea = document.createElement('textarea');
             textarea.value = text;
@@ -220,7 +220,7 @@ export default function UrlGeneratorIndex() {
                         return newSet;
                     });
                 }, 2000);
-            } catch (err) {
+            } catch {
                 toast.error('Failed to copy to clipboard');
             }
             document.body.removeChild(textarea);
@@ -268,10 +268,11 @@ export default function UrlGeneratorIndex() {
                     description: message + ' (Results saved to storage)',
                 });
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error generating URLs:', error);
+            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
             toast.error('Failed to generate URLs', {
-                description: error.response?.data?.message || 'An unexpected error occurred',
+                description: errorMessage,
             });
         } finally {
             setIsGenerating(false);

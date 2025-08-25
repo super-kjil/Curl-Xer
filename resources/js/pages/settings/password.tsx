@@ -4,7 +4,7 @@ import SettingsLayout from '@/layouts/settings/layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Transition } from '@headlessui/react';
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { FormEventHandler, useRef } from 'react';
+import { FormEventHandler, useRef, useEffect } from 'react';
 
 import HeadingSmall from '@/components/heading-small';
 import { Button } from '@/components/ui/button';
@@ -20,17 +20,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Password() {
     const { auth } = usePage<SharedData>().props;
-
-    // Check if user has admin role
-    // Note: roles come as string array from backend (e.g., ['admin', 'user'])
-    const isAdmin = auth.user.roles && auth.user.roles.includes('admin');
-    
-    // Redirect non-admin users to appearance settings
-    if (!isAdmin) {
-        window.location.href = '/settings/appearance';
-        return null;
-    }
-
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);
 
@@ -39,6 +28,21 @@ export default function Password() {
         password: '',
         password_confirmation: '',
     });
+
+    // Check if user has admin role
+    const isAdmin = auth.user.roles && auth.user.roles.includes('admin');
+    
+    // If not admin, redirect to appearance settings
+    useEffect(() => {
+        if (!isAdmin && typeof window !== 'undefined') {
+            window.location.href = '/settings/appearance';
+        }
+    }, [isAdmin]);
+
+    // Don't render if not admin
+    if (!isAdmin) {
+        return null;
+    }
 
     const updatePassword: FormEventHandler = (e) => {
         e.preventDefault();

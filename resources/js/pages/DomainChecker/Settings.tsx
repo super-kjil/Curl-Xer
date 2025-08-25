@@ -1,12 +1,11 @@
-import { DNSLoadingSkeleton } from '@/components/dns-loading-skeleton';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { useDNSSettings } from '@/hooks/use-dns-settings';
-import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem } from '@/types';
+import React from 'react';
 import { Head } from '@inertiajs/react';
+import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem } from '@/types';
+import { useDNSSettings } from '@/hooks/use-dns-settings';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Settings, SquareActivity } from 'lucide-react';
-import { useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -17,12 +16,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function DomainCheckerSettings() {
     const {
         settings,
-        loading,
         saving,
         detecting,
         refreshing,
-        serverDNS,
-        cacheInfo,
         updateSettings,
         saveSettings,
         detectDNS,
@@ -30,28 +26,6 @@ export default function DomainCheckerSettings() {
         addCustomDNS,
         removeCustomDNS,
     } = useDNSSettings();
-
-    const handleRefreshSettings = () => {
-        // Force fresh reload to get latest DNS settings from server
-        window.location.reload();
-    };
-    const [isDarkMode, setIsDarkMode] = useState(false);
-
-    useEffect(() => {
-        // Check for dark mode preference
-        const darkMode = localStorage.getItem('darkMode') === 'true';
-        setIsDarkMode(darkMode);
-        if (darkMode) {
-            document.documentElement.classList.add('dark');
-        }
-    }, []);
-
-    const toggleDarkMode = () => {
-        const newDarkMode = !isDarkMode;
-        setIsDarkMode(newDarkMode);
-        localStorage.setItem('darkMode', newDarkMode.toString());
-        document.documentElement.classList.toggle('dark', newDarkMode);
-    };
 
     const handleSave = async () => {
         await saveSettings();

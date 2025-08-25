@@ -10,15 +10,17 @@ import {
   Legend,
 } from 'recharts';
 
-interface ChartData {
+interface ChartDataItem {
   name: string;
   success_urls: number;
   failed_urls: number;
-  [key: string]: any;
+  success_rate: number;
+  url_count: number;
+  checks: number;
 }
 
 interface MultiChartProps {
-  data: ChartData[];
+  data: ChartDataItem[];
   className?: string;
   height?: number;
   showGrid?: boolean;

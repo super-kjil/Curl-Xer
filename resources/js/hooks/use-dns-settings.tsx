@@ -87,9 +87,10 @@ export function useDNSSettings(): UseDNSSettingsReturn {
                     setCacheInfo(response.data.cache_info);
                 }
             }
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Failed to load DNS settings:', error);
-            toast.error('Failed to load DNS settings');
+            const errorMessage = error instanceof Error ? error.message : 'Failed to load DNS settings';
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -110,9 +111,10 @@ export function useDNSSettings(): UseDNSSettingsReturn {
             } else {
                 toast.error(response.data.message || 'Failed to save DNS settings');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to save DNS settings:', error);
-            toast.error(error.response?.data?.message || 'Failed to save DNS settings');
+            const errorMessage = error instanceof Error ? error.message : 'Failed to save DNS settings';
+            toast.error(errorMessage);
         } finally {
             setSaving(false);
         }
@@ -148,9 +150,10 @@ export function useDNSSettings(): UseDNSSettingsReturn {
             } else {
                 toast.error('Failed to detect DNS settings');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to detect DNS:', error);
-            toast.error(error.response?.data?.message || 'Failed to detect DNS settings');
+            const errorMessage = error instanceof Error ? error.message : 'Failed to detect DNS settings';
+            toast.error(errorMessage);
         } finally {
             setDetecting(false);
         }
@@ -183,9 +186,10 @@ export function useDNSSettings(): UseDNSSettingsReturn {
             } else {
                 toast.error('Failed to refresh server DNS cache');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to refresh server DNS:', error);
-            toast.error(error.response?.data?.message || 'Failed to refresh server DNS cache');
+            const errorMessage = error instanceof Error ? error.message : 'Failed to refresh server DNS cache';
+            toast.error(errorMessage);
         } finally {
             setRefreshing(false);
         }

@@ -9,8 +9,13 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
+interface ChartDataItem {
+  name: string;
+  [key: string]: string | number;
+}
+
 interface ChartProps {
-  data: Array<{ name: string; [key: string]: any }>
+  data: ChartDataItem[]
   height?: number
   fill?: string
   stroke?: string
