@@ -19,6 +19,10 @@ Route::prefix('domain-history')->name('domain-history.')->group(function () {
    Route::get('/history/chart-data', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getChartData'])->name('chart-data');
 });
 
+Route::get('/domain-extractor', function () {
+    return Inertia::render('DomainExt/index');
+})->name('domain-extractor');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     // Domain Checker Routes
     Route::prefix('domain-checker')->name('domain-checker.')->group(function () {

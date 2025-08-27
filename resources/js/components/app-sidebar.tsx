@@ -8,7 +8,8 @@ import {
     History, 
     Settings, 
     Users, 
-    Shield
+    Shield,
+    FileText
 } from 'lucide-react';
 import AppLogo from './app-logo';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -31,6 +32,11 @@ const mainNavItems: NavItem[] = [
         href: '/dashboard',
         icon: Home,
         permission: 'view_dashboard',
+    },
+    {
+        title: 'Domain Extractor',
+        href: '/domain-extractor',
+        icon: FileText,
     },
     {
         title: 'Domain Generator',
@@ -56,13 +62,7 @@ const mainNavItems: NavItem[] = [
         icon: Settings,
         permission: 'view_dns_settings',
     },
-    // {
-    //     title: 'Admin Panel',
-    //     href: '/admin',
-    //     icon: Shield,
-    //     permission: 'manage_users',
-    //     role: 'admin',
-    // },
+    
 ];
 
 const footerNavItems: NavItem[] = [
