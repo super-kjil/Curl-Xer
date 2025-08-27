@@ -5,7 +5,7 @@ import { type BreadcrumbItem } from '@/types';
 import { useDNSSettings } from '@/hooks/use-dns-settings';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Activity, Settings } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -25,19 +25,13 @@ export default function DomainCheckerSettings() {
         detectDNS,
         refreshServerDNS,
         addCustomDNS,
-        removeCustomDNS,
     } = useDNSSettings();
 
     const handleSave = async () => {
         await saveSettings();
     };
 
-    const handleAddCustomDNS = () => {
-        const newDNS = prompt('Enter DNS server IP address:');
-        if (newDNS) {
-            addCustomDNS(newDNS);
-        }
-    };
+
 
 
     // Safety check for null settings

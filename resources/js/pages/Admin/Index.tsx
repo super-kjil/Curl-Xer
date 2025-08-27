@@ -43,7 +43,8 @@ interface PageProps {
     flash?: {
         success?: string;
         error?: string;
-    };[key: string]: any;
+    };
+    [key: string]: unknown;
 }
 
 export default function Admin({ users, roles, permissions, stats }: AdminPageProps) {

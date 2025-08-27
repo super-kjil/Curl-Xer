@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { AlertTriangle, BadgeCheckIcon, CheckCircle, Copy, Trash, XCircle, ChevronDown, ChevronUp, History, ClipboardList, RefreshCw, Search, X } from 'lucide-react';
+import { AlertTriangle, BadgeCheckIcon, CheckCircle, Trash, XCircle, ChevronDown, ChevronUp, History, ClipboardList, RefreshCw, Search, X } from 'lucide-react';
 import { useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import { useHistoryCache } from '@/hooks/use-history-cache';
 import { toast } from 'sonner';
@@ -411,7 +411,7 @@ export default function DomainCheckerHistory() {
                                         }}
                                     >
                                         <Card className="p-2 space-y-4 rounded-lg">
-                                            {item.batches.map((batch, batchIndex) => (
+                                            {item.batches.map((batch) => (
                                                 <div key={batch.id} className=" rounded-lg p-4">
                                                     <div className="flex items-center justify-between mb-3">
                                                         <CardTitle >

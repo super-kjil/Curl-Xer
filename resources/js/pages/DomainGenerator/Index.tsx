@@ -168,7 +168,7 @@ export default function UrlGeneratorIndex() {
         }, 60000); // Check every minute
 
         return () => clearInterval(sessionCheckInterval);
-    }, []);
+    }, [loadResultsFromStorage]);
 
     const setTodayDate = () => {
         const today = new Date();

@@ -244,7 +244,7 @@ export const useHistoryCache = () => {
                 // At this point, we can't cache anything - user will need to reload from API
             }
         }
-    }, []);
+    }, [saveChunks]);
 
     // Save data in chunks for better performance
     const saveChunks = useCallback(async (data: GroupedHistoryItem[]) => {

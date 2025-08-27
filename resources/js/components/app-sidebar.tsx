@@ -7,7 +7,6 @@ import {
     Search, 
     History, 
     Settings, 
-    Users, 
     Shield,
     FileText
 } from 'lucide-react';
