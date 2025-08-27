@@ -139,3 +139,30 @@
         @apply bg-background text-foreground;
     }
 }
+
+/* Sonner Toast Custom Styles */
+.toaster {
+    --toast-bg: var(--popover);
+    --toast-text: var(--popover-foreground);
+    --toast-border: var(--border);
+    --toast-description: var(--muted-foreground);
+}
+
+.toaster [data-sonner-toast] {
+    background: var(--toast-bg) !important;
+    color: var(--toast-text) !important;
+    border: 1px solid var(--toast-border) !important;
+}
+
+.toaster [data-sonner-toast] [data-description] {
+    color: var(--toast-description) !important;
+}
+
+/* Ensure proper contrast in light mode */
+:root {
+    --toast-description: oklch(0.4 0 0);
+}
+
+.dark {
+    --toast-description: oklch(0.708 0 0);
+}

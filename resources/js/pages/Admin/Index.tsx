@@ -12,6 +12,7 @@ import { UserModal } from '@/components/Admin/UserModal';
 import { RoleModal } from '@/components/Admin/RoleModal';
 import { DeleteConfirmationModal } from '@/components/Admin/DeleteConfirmationModal';
 import { toast } from 'sonner';
+import { UserInfo } from '@/components/user-info';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -42,7 +43,7 @@ interface PageProps {
     flash?: {
         success?: string;
         error?: string;
-    };
+    };[key: string]: any;
 }
 
 export default function Admin({ users, roles, permissions, stats }: AdminPageProps) {
@@ -139,9 +140,7 @@ export default function Admin({ users, roles, permissions, stats }: AdminPagePro
                         <div className="flex items-center justify-between">
                             <div>
                                 <h2 className="text-lg font-semibold">User Management</h2>
-                                <p className="text-sm text-muted-foreground">
-                                    Manage regular users only. Admin users should use their profile settings at <code className="bg-muted px-1 py-0.5 rounded text-xs">/settings/profile</code>
-                                </p>
+
                             </div>
                             <Button onClick={handleAddUser}>
                                 <Plus className="mr-2 h-4 w-4" />
@@ -207,18 +206,25 @@ export default function Admin({ users, roles, permissions, stats }: AdminPagePro
                                     {users.map((user) => (
                                         <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
                                             <div className="flex items-center space-x-4">
-                                                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
-                                                    {user.name.charAt(0).toUpperCase()}
+                                                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                                                    <UserInfo user={user} showEmail={true} />
                                                 </div>
-                                                <div>
+                                                {/* <Avatar 
+                                                // className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-semibold"
+                                                className="flex size-full items-center justify-center rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white"
+                                                // src={user.avatar}
+                                                >
+                                                    {user.name.charAt(0).toUpperCase()}
+                                                </Avatar> */}
+                                                {/* <div>
                                                     <p className="font-medium">{user.name}</p>
                                                     <p className="text-sm text-muted-foreground">{user.email}</p>
-                                                </div>
+                                                </div> */}
                                             </div>
                                             <div className="flex items-center space-x-2">
-                                                <Badge variant={user.roles.some((role: { name: string }) => role.name === 'admin') ? 'default' : 'secondary'}>
+                                                {/* <Badge variant={user.roles.some((role: { name: string }) => role.name === 'admin') ? 'default' : 'secondary'}>
                                                     {user.roles[0]?.name || 'No Role'}
-                                                </Badge>
+                                                </Badge> */}
                                                 <Button
                                                     variant="outline"
                                                     size="sm"

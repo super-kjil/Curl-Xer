@@ -56,26 +56,24 @@ const mainNavItems: NavItem[] = [
         icon: Settings,
         permission: 'view_dns_settings',
     },
-    {
-        title: 'Admin Panel',
-        href: '/admin',
-        icon: Shield,
-        permission: 'manage_users',
-        role: 'admin',
-    },
+    // {
+    //     title: 'Admin Panel',
+    //     href: '/admin',
+    //     icon: Shield,
+    //     permission: 'manage_users',
+    //     role: 'admin',
+    // },
 ];
 
 const footerNavItems: NavItem[] = [
     {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Users,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: Home,
-    },
+    title: 'Admin Panel',
+    href: '/admin',
+    icon: Shield,
+    permission: 'manage_users',
+    role: 'admin',
+},
+
 ];
 
 export function AppSidebar() {
@@ -83,6 +81,17 @@ export function AppSidebar() {
     
     // Filter menu items based on user permissions and roles
     const filteredMainNavItems = mainNavItems.filter(item => {
+        if (item.permission && !hasPermission(item.permission)) {
+            return false;
+        }
+        if (item.role && !hasRole(item.role)) {
+            return false;
+        }
+        return true;
+    });
+
+    // Filter footer nav items based on user permissions and roles
+    const filteredFooterNavItems = footerNavItems.filter(item => {
         if (item.permission && !hasPermission(item.permission)) {
             return false;
         }
@@ -111,7 +120,7 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
+                <NavFooter items={filteredFooterNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

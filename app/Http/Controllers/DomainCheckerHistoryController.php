@@ -38,9 +38,8 @@ class DomainCheckerHistoryController extends Controller
             ->groupBy('b.id', 'b.created_at')
             ->orderBy('b.created_at', 'desc');
 
-        if ($hasUserId) {
-            $baseQuery->where('b.user_id', Auth::id());
-        }
+        // Show all data to all users (guests, regular users, and admins)
+        // No filtering by user_id - everyone sees everything
 
         $rows = $baseQuery->limit($perPage)->get();
 
@@ -66,6 +65,11 @@ class DomainCheckerHistoryController extends Controller
 
     public function deleteHistory(Request $request)
     {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Authentication required'], 401);
+        }
+
         $request->validate([
             'id' => 'required|string'
         ]);
@@ -86,6 +90,11 @@ class DomainCheckerHistoryController extends Controller
 
     public function clearHistory()
     {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Authentication required'], 401);
+        }
+
         $hasUserId = Schema::hasColumn('domain_check_batches', 'user_id');
         $query = DB::table('domain_check_batches');
         if ($hasUserId) {
@@ -104,6 +113,11 @@ class DomainCheckerHistoryController extends Controller
 
     public function getHistoryDetails(Request $request)
     {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Authentication required'], 401);
+        }
+
         $request->validate([
             'id' => 'required|string'
         ]);
@@ -164,8 +178,10 @@ class DomainCheckerHistoryController extends Controller
     private function getChartDataFromNewTables(Request $request)
     {
         $userId = Auth::id();
-        $query = DB::table('domain_check_batches as b')
-            ->where('b.user_id', $userId);
+        $query = DB::table('domain_check_batches as b');
+        
+        // Show all data to all users (guests, regular users, and admins)
+        // No filtering by user_id - everyone sees everything
 
         switch ($request->filter) {
             case '7days':
@@ -226,8 +242,10 @@ class DomainCheckerHistoryController extends Controller
         // Calculate overall stats
         $totalBatches = $batches->count();
         $allResults = DB::table('domain_check_results as r')
-            ->join('domain_check_batches as b', 'r.batch_id', '=', 'b.id')
-            ->where('b.user_id', $userId);
+            ->join('domain_check_batches as b', 'r.batch_id', '=', 'b.id');
+            
+        // Show all data to all users (guests, regular users, and admins)
+        // No filtering by user_id - everyone sees everything
 
         // Apply same date filters to results
         switch ($request->filter) {
@@ -266,15 +284,19 @@ class DomainCheckerHistoryController extends Controller
      */
     public function getGroupedHistory(Request $request)
     {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Authentication required'], 401);
+        }
+
         $userId = Auth::id();
 
         $batchesQuery = DB::table('domain_check_batches as b')
             ->select('b.id as batch_id', 'b.note as command', 'b.created_at as timestamp')
             ->orderBy('b.created_at', 'desc');
 
-        if (Schema::hasColumn('domain_check_batches', 'user_id')) {
-            $batchesQuery->where('b.user_id', $userId);
-        }
+        // Show all data to all users (guests, regular users, and admins)
+        // No filtering by user_id - everyone sees everything
 
         $batches = $batchesQuery->get();
         if ($batches->isEmpty()) {
@@ -397,6 +419,11 @@ class DomainCheckerHistoryController extends Controller
      */
     public function deleteHistoryBatches(Request $request)
     {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Authentication required'], 401);
+        }
+
         $request->validate([
             'ids' => 'required|string'
         ]);

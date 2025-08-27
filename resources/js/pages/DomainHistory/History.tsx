@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardDescription, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
@@ -9,6 +9,8 @@ import { AlertTriangle, BadgeCheckIcon, CheckCircle, Copy, Trash, XCircle, Chevr
 import { useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import { useHistoryCache } from '@/hooks/use-history-cache';
 import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -219,7 +221,7 @@ export default function DomainCheckerHistory() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Domain Checker History" />
+            <Head title="Checked History" />
 
             <div className="min-h-screen">
                 {/* Header */}
@@ -228,9 +230,9 @@ export default function DomainCheckerHistory() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <h1 className="flex items-center text-3xl font-bold">
-                                    <History className="mr-2 font-bold "/> History
+                                    <History className="mr-2 font-bold "/> History Logs
                                 </h1>
-                                <p className="mt-2 opacity-90">View past URL check results</p>
+                                <p className="mt-2 opacity-90">View checked domains results</p>
                             </div>
                         </div>
                     </div>
@@ -239,13 +241,8 @@ export default function DomainCheckerHistory() {
                     <div className="mb-6 flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                             <h2 className="text-2xl font-semibold text-gray-800 dark:text-white flex items-center">
-                                <ClipboardList className="mr-2" /> Check History ({filteredHistory.length} of {history.length} items)
+                                <ClipboardList className="mr-2" /> Checked History
                             </h2>
-                            {/* {isCacheValid && cacheInfo.cacheAge && (
-                                // <Badge variant="outline" className="text-xs">
-                                //     Cache: {Math.round(cacheInfo.cacheAge / 1000)}s ago
-                                // </Badge>
-                            )} */}
                         </div>
                         <div className="flex items-center space-x-2">
                             <Button 
@@ -258,21 +255,27 @@ export default function DomainCheckerHistory() {
                                 Refresh
                             </Button>
                             {history.length > 0 && (
-                                <Button onClick={openClearDialog} className="bg-red-500 hover:bg-red-600 dark:text-white">
+                                <Button
+                                    variant="destructive"
+                                    onClick={openClearDialog} 
+                                    title="Clear all history"
+                                    >
                                     <Trash className="mr-2" />
-                                    Clear All
+                                    Erase All History
                                 </Button>
                             )}
                         </div>
                     </div>
 
                     {/* Search Bar */}
-                    <div className="mb-6">
-                        <div className="relative max-w-md">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                            <input
+                    <div className="mb-4">
+                        <div className="grid w-full max-w-sm items-center gap-3">
+                            <div className="flex items-center gap-2">
+                                <Search/>
+                                <Label>Search</Label>          
+                            </div>                                            
+                            <Input
                                 ref={searchInputRef}
-                                type="text"
                                 placeholder="Search by filename, command, or URL... (Ctrl+F)"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -281,15 +284,14 @@ export default function DomainCheckerHistory() {
                                         setSearchQuery('');
                                     }
                                 }}
-                                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                             />
                             {searchQuery && (
-                                <button
+                                <Button
                                     onClick={() => setSearchQuery('')}
                                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                                 >
                                     <X className="h-4 w-4" />
-                                </button>
+                                </Button>
                             )}
                         </div>
                         {searchQuery && (
@@ -327,17 +329,17 @@ export default function DomainCheckerHistory() {
                             )}
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             {filteredHistory.map((item) => (
-                                <div key={item.command} className="overflow-hidden rounded-lg bg-white shadow-lg dark:bg-gray-800">
-                                    <Card className="p-6">
+                                <div key={item.command} className="overflow-hidden">
+                                    <Card className="p-3">
                                         <div className="flex items-center justify-between">
                                             <div className="flex-1">
                                                 <div className="flex items-center space-x-4">
                                                     <div className="flex items-center space-x-2">
                                                         {item.command && (
-                                                            <Badge variant="secondary" className="text-md text-black dark:text-white">
-                                                                <BadgeCheckIcon className="text-blue-700 mr-1" />
+                                                            <Badge variant="secondary" className="text-sm text-black bg-blue-200">
+                                                                <BadgeCheckIcon className="text-blue-700 mr-1 " />
                                                                 <span 
                                                                     dangerouslySetInnerHTML={{ 
                                                                         __html: highlightSearchTerm(item.command, searchQuery) 
@@ -353,32 +355,30 @@ export default function DomainCheckerHistory() {
 
                                                 <div className="mt-2 flex items-center space-x-4">
                                                     <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                        Total URLs: <span className="font-semibold">{item.totalUrls}</span>
+                                                        Total Domains: <span className="font-semibold">{item.totalUrls}</span>
                                                     </div>
                                                     <div className="text-sm text-gray-600 dark:text-gray-400">
                                                         Success Rate: <span className="font-semibold text-green-600">{item.avgSuccessRate}%</span>
                                                     </div>
                                                     <div className="text-sm text-gray-600 dark:text-gray-400">
                                                         DNS:{' '}
-                                                        <span className="font-mono text-xs">{formatDNS(item.primaryDns, item.secondaryDns)}</span>
+                                                        <span className="text-sm font-mono">{formatDNS(item.primaryDns, item.secondaryDns)}</span>
                                                     </div>
                                                 </div>
                                             </div>
 
                                             <div className="flex items-center space-x-2">
                                                 <Button variant="outline" onClick={() => copyHistory(item)} title="Copy URLs with timestamps">
-                                                    <Copy className="mr-1" />
-                                                    
+                                                    {/* <Copy className="mr-1" /> */}
+                                                    Copy
                                                 </Button>
 
                                                 <Button
                                                     variant="outline"
                                                     onClick={() => openDeleteDialog(item.command)}
-                                                    // className="bg-red-500 text-white hover:bg-red-600 dark:text-white"
                                                     title="Delete"
                                                 >
-                                                    <Trash className="mr-1" />
-                                                    
+                                                    Delete
                                                 </Button>
 
                                                 <Button
@@ -400,7 +400,7 @@ export default function DomainCheckerHistory() {
 
                                     {/* Expanded Details */}
                                     <div 
-                                        className={`border-t border-gray-200 overflow-hidden transition-all duration-200 ease-out ${
+                                        className={`border-gray-200 overflow-hidden transition-all duration-200 ease-out ${
                                             expandedItems.has(item.command) 
                                                 ? 'opacity-100 translate-y-0' 
                                                 : 'opacity-0 -translate-y-2 pointer-events-none'
@@ -410,20 +410,20 @@ export default function DomainCheckerHistory() {
                                             display: expandedItems.has(item.command) ? 'block' : 'none'
                                         }}
                                     >
-                                        <div className="p-6 space-y-4">
+                                        <Card className="p-2 space-y-4 rounded-lg">
                                             {item.batches.map((batch, batchIndex) => (
                                                 <div key={batch.id} className=" rounded-lg p-4">
                                                     <div className="flex items-center justify-between mb-3">
-                                                        <h4 className="text-sm font-medium">
-                                                            Batch {batchIndex + 1}: {batch.urlCount} URLs
-                                                        </h4>
+                                                        <CardTitle >
+                                                            Total Domains: {batch.urlCount}
+                                                        </CardTitle>
                                                         <div className="flex items-center space-x-2">
-                                                            <span className={`text-sm ${batch.successRate > 80 ? "text-green-600 dark:text-green-400" : batch.successRate > 50 ? "text-yellow-600 dark:text-yellow-400" : "text-red-600 dark:text-red-400"}`}>
+                                                            <CardDescription className={`${batch.successRate > 80 ? "text-green-600 dark:text-green-400" : batch.successRate > 50 ? "text-yellow-600 dark:text-yellow-400" : "text-red-600 dark:text-red-400"}`}>
                                                                 {batch.successRate}% accessible
-                                                            </span>
-                                                            <span className="text-xs ">
+                                                            </CardDescription>
+                                                            <CardDescription className="text-xs ">
                                                                 {new Date(batch.timestamp).toLocaleString()}
-                                                            </span>
+                                                            </CardDescription>
                                                         </div>
                                                     </div>
                                                     <div className="space-y-2">
@@ -457,7 +457,7 @@ export default function DomainCheckerHistory() {
                                                                             )}
                                                                         </div>
                                                                     </div>
-                                                                    <div className="ml-4 flex-shrink-0">
+                                                                    <div className="flex ml-4 flex-shrink-0">
                                                                         {result.accessible ? (
                                                                             <CheckCircle className="h-5 w-5 text-green-600" />
                                                                         ) : (
@@ -473,10 +473,10 @@ export default function DomainCheckerHistory() {
                                                                     variant="outline"
                                                                     size="sm"
                                                                     onClick={() => toggleResultsExpanded(batch.id)}
-                                                                    className="w-full text-xs"
+                                                                    className="w-full"
                                                                 >
                                                                     {expandedResults.has(batch.id) 
-                                                                        ? `Show Less (${batch.results.length} total)` 
+                                                                        ? `Show Less` 
                                                                         : `Show More (${batch.results.length - 10} more results)`
                                                                     }
                                                                 </Button>
@@ -485,7 +485,7 @@ export default function DomainCheckerHistory() {
                                                     </div>
                                                 </div>
                                             ))}
-                                        </div>
+                                        </Card>
                                     </div>
                                 </div>
                             ))}

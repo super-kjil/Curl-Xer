@@ -10,10 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { 
-    TrendingUp, 
-    Globe, 
-    CheckCircle, 
+import {
+    TrendingUp,
+    Globe,
+    CheckCircle,
     Activity,
     RefreshCw
 } from 'lucide-react';
@@ -27,18 +27,18 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Dashboard() {
-    const { 
-        chartData, 
-        stats, 
-        loading, 
-        error, 
-        loadChartData, 
+    const {
+        chartData,
+        stats,
+        loading,
+        error,
+        loadChartData,
         refreshDashboard,
         successRateData,
         checksData,
         cacheInfo
     } = useDashboardCache();
-    
+
     const [filter, setFilter] = useState('7days');
     const [startDate, setStartDate] = useState<Date>();
     const [endDate, setEndDate] = useState<Date>();
@@ -80,26 +80,26 @@ export default function Dashboard() {
                         <p className="text-muted-foreground">
                             Monitor your domain checking activity and performance
                         </p>
-                        {cacheInfo.isCacheValid && cacheInfo.cacheAge && (
+                        {/* {cacheInfo.isCacheValid && cacheInfo.cacheAge && (
                             <Badge variant="outline" className="mt-2 text-xs">
                                 Cache: {Math.round(cacheInfo.cacheAge / 1000)}s ago
                             </Badge>
-                        )}
+                        )} */}
                     </div>
-                    
+
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                        <Button 
-                            variant="outline" 
+                        <Button
+                            variant="outline"
                             onClick={refreshDashboard}
                             disabled={loading}
                             title="Refresh dashboard data"
                         >
-                            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                            <RefreshCw className={`mr-2 h-6 w-6 ${loading ? 'animate-spin' : ''}`} />
                             Refresh
                         </Button>
-                        
+
                         <Select value={filter} onValueChange={handleFilterChange}>
-                            <SelectTrigger className="w-[180px]">
+                            <SelectTrigger className="w-[150px]">
                                 <SelectValue placeholder="Select filter" />
                             </SelectTrigger>
                             <SelectContent>
@@ -109,26 +109,27 @@ export default function Dashboard() {
                                 <SelectItem value="custom">Custom Range</SelectItem>
                             </SelectContent>
                         </Select>
-                        
+
                         {filter === 'custom' && (
                             <div className="flex gap-2">
                                 <DatePicker
                                     date={startDate}
                                     onDateChange={setStartDate}
                                     placeholder="Start date"
-                                    className="w-[140px]"
+                                    className="w-[200px]"
+
                                 />
                                 <DatePicker
                                     date={endDate}
                                     onDateChange={setEndDate}
                                     placeholder="End date"
-                                    className="w-[140px]"
+                                    className="w-[200px]"
                                 />
-                                <Button 
-                                    variant="outline" 
+                                <Button
+                                    variant="outline"
                                     onClick={handleDateChange}
                                     disabled={!startDate || !endDate}
-                                    size="sm"
+                                    // size="sm"
                                 >
                                     Apply
                                 </Button>
@@ -141,7 +142,7 @@ export default function Dashboard() {
                 {error && (
                     <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
                         <div className="flex items-center">
-                            <CheckCircle className="mr-2 h-4 w-4 text-red-500" />
+                            <CheckCircle className="mr-2 h-6 w-6 text-red-500" />
                             <p className="text-sm text-red-700 dark:text-red-300">
                                 {error}
                             </p>
@@ -153,67 +154,67 @@ export default function Dashboard() {
                 <div className="grid gap-4 md:grid-cols-3">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Checks</CardTitle>
-                            <Activity className="h-4 w-4 text-muted-foreground" />
+                            <CardTitle className="text-md font-medium">Total Checks</CardTitle>
+                            <Activity className="h-6 w-6 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{stats.total_checks}</div>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-sm text-muted-foreground">
                                 Domain checks performed
                             </p>
                         </CardContent>
                     </Card>
-                    
+
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
-                            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                            <CardTitle className="text-md font-medium">Success Rate</CardTitle>
+                            <TrendingUp className="h-6 w-6 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{stats.avg_success_rate}%</div>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-sm text-muted-foreground">
                                 Average success rate
                             </p>
                         </CardContent>
                     </Card>
-                    
+
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total URLs</CardTitle>
-                            <Globe className="h-4 w-4 text-muted-foreground" />
+                            <CardTitle className="text-md font-medium">Total Domains</CardTitle>
+                            <Globe className="h-6 w-6 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{stats.total_urls}</div>
-                            <p className="text-xs text-muted-foreground">
-                                URLs checked
+                            <p className="text-sm text-muted-foreground">
+                                Domain checked
                             </p>
                         </CardContent>
                     </Card>
                 </div>
-                                    <Card>
-                        <CardHeader>
-                            <CardTitle>URL Success vs Failed</CardTitle>
-                            <CardDescription>
-                                Success and failed URLs checked per day
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {loading ? (
-                                <div className="flex h-[300px] items-center justify-center">
-                                    <div className="text-muted-foreground">Loading...</div>
-                                </div>
-                            ) : chartData.length > 0 ? (
-                                <MultiChart
-                                    data={chartData}
-                                    height={300}
-                                />
-                            ) : (
-                                <div className="flex h-[300px] items-center justify-center">
-                                    <div className="text-muted-foreground">No data available</div>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>URL Success vs Failed</CardTitle>
+                        <CardDescription>
+                            Success and failed domains checked per day
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {loading ? (
+                            <div className="flex h-[300px] items-center justify-center">
+                                <div className="text-muted-foreground">Loading...</div>
+                            </div>
+                        ) : chartData.length > 0 ? (
+                            <MultiChart
+                                data={chartData}
+                                height={300}
+                            />
+                        ) : (
+                            <div className="flex h-[300px] items-center justify-center">
+                                <div className="text-muted-foreground">No data available</div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
 
                 {/* Charts */}
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -230,7 +231,7 @@ export default function Dashboard() {
                                     <div className="text-muted-foreground">Loading...</div>
                                 </div>
                             ) : successRateData.length > 0 ? (
-                                <Chart 
+                                <Chart
                                     data={successRateData}
                                     height={300}
                                     fill="#3B82F6"
@@ -244,7 +245,7 @@ export default function Dashboard() {
                         </CardContent>
                     </Card>
 
-                   
+
                     <Card>
                         <CardHeader>
                             <CardTitle>Daily Checks</CardTitle>

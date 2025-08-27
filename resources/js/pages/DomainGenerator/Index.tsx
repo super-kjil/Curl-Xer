@@ -200,7 +200,7 @@ export default function UrlGeneratorIndex() {
                     newSet.delete(itemId);
                     return newSet;
                 });
-            }, 2000);
+            }, 3000);
         } catch {
             // Fallback for older browsers
             const textarea = document.createElement('textarea');
@@ -219,7 +219,7 @@ export default function UrlGeneratorIndex() {
                         newSet.delete(itemId);
                         return newSet;
                     });
-                }, 2000);
+                }, 3000);
             } catch {
                 toast.error('Failed to copy to clipboard');
             }
@@ -264,7 +264,7 @@ export default function UrlGeneratorIndex() {
                     message += ` (${response.data.duplicate_count} duplicates removed)`;
                 }
 
-                toast.success('URLs generated successfully', {
+                toast.success('Domains generated successfully', {
                     description: message + ' (Results saved to storage)',
                 });
             }
@@ -295,7 +295,7 @@ export default function UrlGeneratorIndex() {
                         </CardTitle>
                         <div className="flex items-center space-x-3">
                             <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                {urls.length} URLs
+                                {urls.length} Domains
                             </Badge>
                             <Button
                                 variant="outline"
@@ -315,13 +315,13 @@ export default function UrlGeneratorIndex() {
                 </CardHeader>
                 <CardContent>
                     <div className="max-h-96 overflow-y-auto rounded-lg">
-                        <div className="space-y-2">
+                        <div className="">
                             {urls.map((url, index) => {
                                 const itemCopyId = `${groupKey}-${index}`;
                                 return (
                                     <div
                                         key={index}
-                                        className="group flex items-center justify-between rounded-md p-2 transition-colors"
+                                        className="group flex items-center justify-between rounded-md p-1 transition-colors"
                                     >
                                         <span className="flex-1 font-mono text-sm break-all">{url}</span>
                                         <Button
@@ -357,9 +357,9 @@ export default function UrlGeneratorIndex() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <h1 className="flex items-center text-3xl font-bold">
-                                    <Link2 className="mr-3 h-8 w-8" /> URL Generator
+                                    <Link2 className="mr-3 h-8 w-8" /> Domains Generator
                                 </h1>
-                                <p className="mt-2 opacity-90">Create formatted URLs with automatic www/non-www variants</p>
+                                <p className="mt-2 opacity-90">Create formatted Domains with automatic www/non-www variants</p>
                             </div>
 
                         </div>
@@ -368,10 +368,10 @@ export default function UrlGeneratorIndex() {
 
                 <div className="container mx-auto max-w-6xl px-4 py-8">
                     {/* Input Form */}
-                    <Card className="mb-8">
+                    <Card className="mb-8 shadow-xl">
                         <CardHeader>
                             <CardTitle className="flex items-center justify-between">
-                                URL Generator Settings
+                                Domains Generator Settings
                                 <Button
                                     disabled={!hasStoredResults}
                                     size="lg"
@@ -390,21 +390,20 @@ export default function UrlGeneratorIndex() {
                                     <div className="mb-2 flex items-center justify-between">
                                         <Label htmlFor="urls" className="flex items-center">
                                             <Link2 className="mr-1 h-4 w-4" />
-                                            URLs (one per line)
+                                            Domains (one per line)
                                         </Label>
                                         <Badge
                                             variant="outline"
                                             className={getUrlCount() > 0 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : ''}
                                         >
-                                            {getUrlCount()} URLs entered
+                                            {getUrlCount()} Domains entered
                                         </Badge>
                                     </div>
                                     <Textarea
-                                        id="urls"
                                         value={urls}
                                         onChange={(e) => setUrls(e.target.value)}
-                                        className="h-32 resize-y"
-                                        placeholder="Enter URLs here...&#10;example.com&#10;google.com&#10;github.com"
+                                        className="h-32 resize-y mt-2 min-h-80 max-h-100"
+                                        placeholder="Enter Domains here...&#10;example.com&#10;google.com&#10;github.com"
                                     />
                                 </div>
 
@@ -417,7 +416,6 @@ export default function UrlGeneratorIndex() {
                                         </Label>
                                         <div className="relative">
                                             <Input
-                                                id="prefix"
                                                 value={prefix}
                                                 onChange={(e) => setPrefix(e.target.value)}
                                                 className="pl-8"
@@ -435,7 +433,6 @@ export default function UrlGeneratorIndex() {
                                         </Label>
                                         <div className="flex">
                                             <Input
-                                                id="date"
                                                 value={date}
                                                 onChange={(e) => setDate(e.target.value)}
                                                 className="rounded-r-none"
@@ -453,7 +450,6 @@ export default function UrlGeneratorIndex() {
                                         <div className="space-y-2">
                                             <div className="flex items-center space-x-2">
                                                 <Checkbox
-                                                    id="include-www"
                                                     checked={includeWww}
                                                     onCheckedChange={(checked) => setIncludeWww(checked as boolean)}
                                                 />
@@ -463,7 +459,6 @@ export default function UrlGeneratorIndex() {
                                             </div>
                                             <div className="flex items-center space-x-2">
                                                 <Checkbox
-                                                    id="include-non-www"
                                                     checked={includeNonWww}
                                                     onCheckedChange={(checked) => setIncludeNonWww(checked as boolean)}
                                                 />
@@ -481,12 +476,12 @@ export default function UrlGeneratorIndex() {
                                         {isGenerating ? (
                                             <>
                                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Generating URLs...
+                                                Generating Domains...
                                             </>
                                         ) : (
                                             <>
                                                 <Zap className="mr-2 h-4 w-4" />
-                                                Generate URLs
+                                                Generate Domains
                                             </>
                                         )}
                                     </Button>

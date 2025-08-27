@@ -7,25 +7,25 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+// Public routes accessible to all users (including guests)
+Route::get('dashboard', function () {
+    return Inertia::render('dashboard');
+})->name('dashboard');
 
+// Domain History - Public access
+Route::prefix('domain-history')->name('domain-history.')->group(function () {
+   // History routes - Public access
+   Route::get('/history', [App\Http\Controllers\DomainCheckerHistoryController::class, 'index'])->name('history');
+   Route::get('/history/chart-data', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getChartData'])->name('chart-data');
+});
+
+Route::middleware(['auth', 'verified'])->group(function () {
     // Domain Checker Routes
     Route::prefix('domain-checker')->name('domain-checker.')->group(function () {
         Route::get('/', [App\Http\Controllers\DomainCheckerController::class, 'index'])->name('index');
         Route::post('/check-urls', [App\Http\Controllers\DomainCheckerController::class, 'checkUrls'])->name('check-urls');
         Route::get('/default-dns', [App\Http\Controllers\DomainCheckerController::class, 'getDefaultDNS'])->name('default-dns');
         Route::get('/debug-dns', [App\Http\Controllers\DomainCheckerController::class, 'debugDNS'])->name('debug-dns');
-
-        // // History routes
-        // Route::get('/history', [App\Http\Controllers\DomainCheckerHistoryController::class, 'index'])->name('history');
-        // Route::get('/history/data', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getHistory'])->name('history-data');
-        // Route::get('/history/chart-data', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getChartData'])->name('chart-data');
-        // Route::delete('/history', [App\Http\Controllers\DomainCheckerHistoryController::class, 'deleteHistory'])->name('delete-history');
-        // Route::delete('/history/clear', [App\Http\Controllers\DomainCheckerHistoryController::class, 'clearHistory'])->name('clear-history');
-        // Route::get('/history/details', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getHistoryDetails'])->name('history-details');
 
         // Settings routes
         Route::get('/settings', [App\Http\Controllers\DomainCheckerSettingsController::class, 'index'])->name('settings');
@@ -37,12 +37,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/settings/refresh-server-dns', [App\Http\Controllers\DomainCheckerSettingsController::class, 'refreshServerDNS'])->name('refresh-server-dns');
         Route::get('/settings/server-dns-status', [App\Http\Controllers\DomainCheckerSettingsController::class, 'getServerDNSStatus'])->name('server-dns-status');
     });
-    // Domain Generator Routes
+    
+    // Domain History - Protected routes (require authentication)
     Route::prefix('domain-history')->name('domain-history.')->group(function () {
-       // History routes
-       Route::get('/history', [App\Http\Controllers\DomainCheckerHistoryController::class, 'index'])->name('history');
        Route::get('/history/data', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getHistory'])->name('history-data');
-       Route::get('/history/chart-data', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getChartData'])->name('chart-data');
        Route::delete('/history', [App\Http\Controllers\DomainCheckerHistoryController::class, 'deleteHistory'])->name('delete-history');
        Route::delete('/history/clear', [App\Http\Controllers\DomainCheckerHistoryController::class, 'clearHistory'])->name('clear-history');
        Route::get('/history/details', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getHistoryDetails'])->name('history-details');
@@ -52,6 +50,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
        // Legacy-like endpoint to mirror domain-checker/history.php behavior
        Route::post('/history/legacy', [App\Http\Controllers\DomainCheckerHistoryController::class, 'legacyHistory'])->name('history-legacy');
     });
+    
     // Domain Generator Routes
     Route::prefix('domain-generator')->name('domain-generator.')->group(function () {
         Route::get('/', [App\Http\Controllers\DomainGeneratorController::class, 'index'])->name('index');
