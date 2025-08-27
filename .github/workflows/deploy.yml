@@ -1,0 +1,227 @@
+name: Deploy to Ubuntu Server
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: # Allow manual deployment
+
+env:
+  PHP_VERSION: '8.2'
+  NODE_VERSION: '18'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: laravel_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ env.PHP_VERSION }}
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, iconv, json, mbstring, pdo, pdo_mysql, phar, tokenizer, xml, zip, curl, fileinfo
+        coverage: xdebug
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Copy .env
+      run: cp .env.example .env
+    
+    - name: Install Composer dependencies
+      run: composer install --prefer-dist --no-interaction --no-progress
+    
+    - name: Install NPM dependencies
+      run: npm ci
+    
+    - name: Generate key
+      run: php artisan key:generate
+    
+    - name: Directory permissions
+      run: chmod -R 777 storage bootstrap/cache
+    
+    - name: Create database
+      run: |
+        mysql -h 127.0.0.1 -u root -ppassword -e "CREATE DATABASE IF NOT EXISTS laravel_test;"
+    
+    - name: Run migrations
+      run: php artisan migrate --force
+    
+    - name: Run tests
+      run: |
+        php artisan test
+        npm run test
+    
+    - name: Build assets
+      run: npm run build
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Install NPM dependencies
+      run: npm ci
+    
+    - name: Build assets
+      run: npm run build
+    
+    - name: Create deployment package
+      run: |
+        mkdir -p deployment
+        cp -r app bootstrap config database lang public resources routes storage tests vendor .env.example composer.json composer.lock package.json package-lock.json deployment/
+        cp -r public/build deployment/public/
+        tar -czf deployment.tar.gz deployment/
+    
+    - name: Deploy to Ubuntu Server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        port: ${{ secrets.PORT }}
+        script: |
+          # Set deployment variables
+          DEPLOY_PATH="/var/www/curl-xer"
+          BACKUP_PATH="/var/www/backups/curl-xer"
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          
+          # Create backup directory if it doesn't exist
+          sudo mkdir -p $BACKUP_PATH
+          
+          # Create backup of current deployment
+          if [ -d "$DEPLOY_PATH" ]; then
+            echo "Creating backup of current deployment..."
+            sudo tar -czf "$BACKUP_PATH/backup_$TIMESTAMP.tar.gz" -C /var/www curl-xer
+            echo "Backup created: backup_$TIMESTAMP.tar.gz"
+          fi
+          
+          # Create deployment directory if it doesn't exist
+          sudo mkdir -p $DEPLOY_PATH
+          
+          # Change to deployment directory
+          cd $DEPLOY_PATH
+          
+          # Download and extract deployment package
+          echo "Downloading deployment package..."
+          wget -O deployment.tar.gz ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts
+          
+          # Extract deployment package
+          echo "Extracting deployment package..."
+          sudo tar -xzf deployment.tar.gz --strip-components=1
+          
+          # Set proper permissions
+          echo "Setting permissions..."
+          sudo chown -R www-data:www-data $DEPLOY_PATH
+          sudo chmod -R 755 $DEPLOY_PATH
+          sudo chmod -R 775 storage bootstrap/cache
+          
+          # Copy environment file if it doesn't exist
+          if [ ! -f .env ]; then
+            echo "Creating .env file..."
+            sudo cp .env.example .env
+            sudo chown www-data:www-data .env
+          fi
+          
+          # Install Composer dependencies
+          echo "Installing Composer dependencies..."
+          composer install --optimize-autoloader --no-dev --no-interaction --no-progress
+          
+          # Clear and cache configurations
+          echo "Optimizing Laravel..."
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+          
+          # Run database migrations
+          echo "Running database migrations..."
+          php artisan migrate --force
+          
+          # Clear old caches
+          echo "Clearing old caches..."
+          php artisan cache:clear
+          php artisan config:clear
+          
+                     # Restart services
+           echo "Restarting services..."
+           sudo systemctl restart apache2
+           sudo systemctl restart php8.2-fpm
+          
+          # Clean up
+          echo "Cleaning up..."
+          rm -f deployment.tar.gz
+          
+          echo "Deployment completed successfully!"
+          
+    - name: Health Check
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        port: ${{ secrets.PORT }}
+        script: |
+          # Wait a moment for services to fully restart
+          sleep 10
+          
+          # Check if the application is responding
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost)
+          
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "✅ Application is responding correctly (HTTP $HTTP_STATUS)"
+          else
+            echo "❌ Application is not responding correctly (HTTP $HTTP_STATUS)"
+            exit 1
+          fi
+          
+                     # Check service status
+           echo "Checking service status..."
+           sudo systemctl status apache2 --no-pager -l
+           sudo systemctl status php8.2-fpm --no-pager -l
+          
+          echo "Health check completed successfully!"
+
+  notify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Notify on Success
+      if: needs.deploy.result == 'success'
+      run: |
+        echo "🚀 Deployment successful!"
+        echo "Application deployed to: ${{ secrets.HOST }}"
+        echo "Deployment time: $(date)"
+    
+    - name: Notify on Failure
+      if: needs.deploy.result == 'failure'
+      run: |
+        echo "❌ Deployment failed!"
+        echo "Check the logs for more details"
+        exit 1

@@ -1,4 +1,4 @@
-# CurlX - Laravel Application
+# CurlXer - Laravel Application
 
 A modern, high-performance domain and URL checking application built with Laravel 11, Inertia.js, and React. This application features comprehensive user management, role-based permissions, and advanced domain checking capabilities with intelligent caching and performance optimizations.
 
