@@ -24,7 +24,7 @@ export default function DomainCheckerSettings() {
         saveSettings,
         detectDNS,
         refreshServerDNS,
-        addCustomDNS,
+
     } = useDNSSettings();
 
     const handleSave = async () => {

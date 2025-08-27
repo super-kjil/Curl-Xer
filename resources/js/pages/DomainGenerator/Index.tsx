@@ -47,7 +47,7 @@ interface StoredResult {
 }
 
 const STORAGE_KEY = 'url_generator_results';
-const SESSION_DURATION = 5 * 60 * 1000; // 24 hours in milliseconds
+const SESSION_DURATION = 2 * 60 * 1000; // 2 minutes in milliseconds
 
 export default function UrlGeneratorIndex() {
     const [urls, setUrls] = useState('');
@@ -101,33 +101,7 @@ export default function UrlGeneratorIndex() {
         }
     };
 
-    // Load results from localStorage
-    const loadResultsFromStorage = () => {
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (!stored) return null;
 
-            const storedResult: StoredResult = JSON.parse(stored);
-
-            // Check if data is expired (older than SESSION_DURATION)
-            const isExpired = Date.now() - storedResult.timestamp > SESSION_DURATION;
-
-            // Check if session has changed or expired
-            const currentSessionId = getSessionId();
-            const sessionChanged = storedResult.sessionId !== currentSessionId;
-
-            if (isExpired || sessionChanged || isSessionExpired()) {
-                clearStoredResults();
-                return null;
-            }
-
-            return storedResult;
-        } catch (error) {
-            console.warn('Failed to load results from localStorage:', error);
-            clearStoredResults();
-            return null;
-        }
-    };
 
     // Clear stored results
     const clearStoredResults = () => {
@@ -147,6 +121,34 @@ export default function UrlGeneratorIndex() {
     useEffect(() => {
         // Set today's date on component mount
         setTodayDate();
+
+        // Load results from localStorage
+        const loadResultsFromStorage = () => {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (!stored) return null;
+
+                const storedResult: StoredResult = JSON.parse(stored);
+
+                // Check if data is expired (older than SESSION_DURATION)
+                const isExpired = Date.now() - storedResult.timestamp > SESSION_DURATION;
+
+                // Check if session has changed or expired
+                const currentSessionId = getSessionId();
+                const sessionChanged = storedResult.sessionId !== currentSessionId;
+
+                if (isExpired || sessionChanged || isSessionExpired()) {
+                    clearStoredResults();
+                    return null;
+                }
+
+                return storedResult;
+            } catch (error) {
+                console.warn('Failed to load results from localStorage:', error);
+                clearStoredResults();
+                return null;
+            }
+        };
 
         // Load stored results if available
         const storedResults = loadResultsFromStorage();
@@ -168,7 +170,7 @@ export default function UrlGeneratorIndex() {
         }, 60000); // Check every minute
 
         return () => clearInterval(sessionCheckInterval);
-    }, [loadResultsFromStorage]);
+    }, []);
 
     const setTodayDate = () => {
         const today = new Date();
