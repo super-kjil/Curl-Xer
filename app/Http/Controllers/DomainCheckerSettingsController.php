@@ -165,6 +165,36 @@ class DomainCheckerSettingsController extends Controller
     }
 
     /**
+     * Get DNS servers for Domain Checker (no full settings permission required)
+     */
+    public function getDNSServers()
+    {
+        try {
+            // Get server DNS (shared for all team members)
+            $serverDNS = $this->urlCheckerService->getServerDNSWithCache();
+            
+            return response()->json([
+                'success' => true,
+                'primary_dns' => $serverDNS['primary'] ?? '8.8.8.8',
+                'secondary_dns' => $serverDNS['secondary'] ?? '1.1.1.1',
+                'dns_source' => 'server'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('DNS Servers Fetch Error', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch DNS servers: ' . $e->getMessage(),
+                'primary_dns' => '8.8.8.8',
+                'secondary_dns' => '1.1.1.1'
+            ], 500);
+        }
+    }
+
+    /**
      * Refresh server DNS cache (admin function)
      */
     public function refreshServerDNS()

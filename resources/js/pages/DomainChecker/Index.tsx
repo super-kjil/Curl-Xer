@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
-import { useDNSSettings } from '@/hooks/use-dns-settings';
+import { useDNSServers } from '@/hooks/use-dns-servers';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
@@ -51,7 +51,7 @@ export default function DomainCheckerIndex() {
     const [checkedUrls, setCheckedUrls] = useState(0);
     const [progressIntervalId, setProgressIntervalId] = useState<NodeJS.Timeout | null>(null);
 
-    const { settings, loading: dnsLoading } = useDNSSettings();
+    const { dnsServers, loading: dnsLoading } = useDNSServers();
 
     useEffect(() => {
         // Check for dark mode preference
@@ -73,13 +73,13 @@ export default function DomainCheckerIndex() {
     }, [progressIntervalId]);
 
     const getCurrentDNSDisplay = () => {
-        if (dnsLoading) return 'Loading DNS settings...';
+        if (dnsLoading) return 'Loading DNS servers...';
 
-        // Safety check for null settings
-        if (!settings) return 'DNS settings not available';
+        // Safety check for null dnsServers
+        if (!dnsServers) return 'DNS servers not available';
 
-        const primary = settings.primary_dns || 'Auto';
-        const secondary = settings.secondary_dns || '0.0.0.0';
+        const primary = dnsServers.primary_dns || '8.8.8.8';
+        const secondary = dnsServers.secondary_dns || '1.1.1.1';
         return `Primary: ${primary}, Secondary: ${secondary}`;
     };
 
@@ -151,8 +151,8 @@ export default function DomainCheckerIndex() {
         try {
             const response = await axios.post<CheckResponse>('/domain-checker/check-urls', {
                 urls: uniqueUrls.join('\n'), // Send deduplicated URLs
-                primary_dns: settings?.primary_dns || '8.8.8.8',
-                secondary_dns: settings?.secondary_dns || '1.1.1.1',
+                primary_dns: dnsServers?.primary_dns || '8.8.8.8',
+                secondary_dns: dnsServers?.secondary_dns || '1.1.1.1',
                 command,
             });
 

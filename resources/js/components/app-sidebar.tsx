@@ -36,6 +36,7 @@ const mainNavItems: NavItem[] = [
         title: 'Domain Extractor',
         href: '/domain-extractor',
         icon: FileText,
+        permission: 'view_domain_extractor',  // Add permission
     },
     {
         title: 'Domain Generator',
@@ -61,7 +62,6 @@ const mainNavItems: NavItem[] = [
         icon: Settings,
         permission: 'view_dns_settings',
     },
-    
 ];
 
 const footerNavItems: NavItem[] = [

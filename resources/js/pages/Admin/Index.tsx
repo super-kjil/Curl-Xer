@@ -321,7 +321,7 @@ export default function Admin({ users, roles, permissions, stats }: AdminPagePro
                                     {roles.filter(role => role.name !== 'admin').map((role) => (
                                         <div key={role.id} className="flex items-center justify-between p-4 border rounded-lg">
                                             <div className="flex items-center space-x-4">
-                                                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
+                                                <div className="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center font-semibold">
                                                     {role.name.charAt(0).toUpperCase()}
                                                 </div>
                                                 <div>

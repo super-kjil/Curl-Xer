@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { useHistoryStore } from '@/stores/useHistoryStore';
 
 export const useHistoryData = () => {
-    const [history, setHistory] = useState<GroupedHistoryItem[]>([]);
+    const [history, setHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 

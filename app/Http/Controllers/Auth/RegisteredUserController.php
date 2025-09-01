@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Permission\Models\Role;
 
 class RegisteredUserController extends Controller
 {
@@ -42,10 +43,21 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
+        // Assign 'user' role to new users (if it exists)
+        $userRole = Role::where('name', 'user')->first();
+        if ($userRole) {
+            $user->assignRole($userRole);
+        }
+
         event(new Registered($user));
 
-        Auth::login($user);
+        // If this is admin registration (user is authenticated and has admin role)
+        if (Auth::check() && Auth::user()->roles->contains('name', 'admin')) {
+            return redirect()->route('admin.index')->with('success', 'User created successfully.');
+        }
 
+        // Regular registration (first user setup)
+        Auth::login($user);
         return redirect()->intended(route('dashboard', absolute: false));
     }
 }

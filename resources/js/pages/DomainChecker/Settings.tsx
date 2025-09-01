@@ -113,6 +113,7 @@ export default function DomainCheckerSettings() {
                                         value={settings.primary_dns || ''}
                                         className="cursor-not-allowed"
                                         placeholder="Detected from server"
+                                        readOnly
                                     />
                                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                         This DNS is automatically detected from the server and shared by all team members
@@ -127,6 +128,7 @@ export default function DomainCheckerSettings() {
                                         value={settings.secondary_dns || ''}
                                         className="cursor-not-allowed"
                                         placeholder="Detected from server"
+                                        readOnly
                                     />
                                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                         Secondary DNS server from the same network configuration

@@ -31,7 +31,7 @@ export function UserModal({ isOpen, onClose, user, roles, mode }: UserModalProps
                 email: user.email,
                 password: '',
                 password_confirmation: '',
-                role: user.roles[0]?.name || '',
+                role: user.roles?.[0]?.name || '',
             });
         } else {
             reset();

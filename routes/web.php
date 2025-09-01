@@ -7,43 +7,46 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-// Public routes accessible to all users (including guests)
-Route::get('dashboard', function () {
-    return Inertia::render('dashboard');
-})->name('dashboard');
-
-// Domain History - Public access
-Route::prefix('domain-history')->name('domain-history.')->group(function () {
-   // History routes - Public access
-   Route::get('/history', [App\Http\Controllers\DomainCheckerHistoryController::class, 'index'])->name('history');
-   Route::get('/history/chart-data', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getChartData'])->name('chart-data');
-});
-
-Route::get('/domain-extractor', function () {
-    return Inertia::render('DomainExt/index');
-})->name('domain-extractor');
-
+// All routes that require authentication and verification
 Route::middleware(['auth', 'verified'])->group(function () {
+    // Dashboard
+    Route::get('dashboard', function () {
+        return Inertia::render('dashboard');
+    })->name('dashboard')->middleware('permission:view_dashboard');
+
+    // Domain History - Basic routes
+    Route::prefix('domain-history')->name('domain-history.')->middleware('permission:view_domain_history')->group(function () {
+        Route::get('/history', [App\Http\Controllers\DomainCheckerHistoryController::class, 'index'])->name('history');
+        Route::get('/history/chart-data', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getChartData'])->name('chart-data');
+    });
+
+    // Domain Extractor
+    Route::get('domain-extractor', function () {
+        return Inertia::render('DomainExt/index');
+    })->name('domain-extractor')->middleware('permission:view_domain_extractor');
+    
     // Domain Checker Routes
-    Route::prefix('domain-checker')->name('domain-checker.')->group(function () {
+    Route::prefix('domain-checker')->name('domain-checker.')->middleware('permission:view_domain_checker')->group(function () {
         Route::get('/', [App\Http\Controllers\DomainCheckerController::class, 'index'])->name('index');
         Route::post('/check-urls', [App\Http\Controllers\DomainCheckerController::class, 'checkUrls'])->name('check-urls');
         Route::get('/default-dns', [App\Http\Controllers\DomainCheckerController::class, 'getDefaultDNS'])->name('default-dns');
-        Route::get('/debug-dns', [App\Http\Controllers\DomainCheckerController::class, 'debugDNS'])->name('debug-dns');
+        Route::get('/dns-servers', [App\Http\Controllers\DomainCheckerSettingsController::class, 'getDNSServers'])->name('dns-servers');
+    });
 
-        // Settings routes
-        Route::get('/settings', [App\Http\Controllers\DomainCheckerSettingsController::class, 'index'])->name('settings');
-        Route::post('/settings', [App\Http\Controllers\DomainCheckerSettingsController::class, 'update'])->name('update-settings');
-        Route::get('/settings/get', [App\Http\Controllers\DomainCheckerSettingsController::class, 'getSettings'])->name('get-settings');
-        Route::get('/settings/detect-dns', [App\Http\Controllers\DomainCheckerSettingsController::class, 'detectDNS'])->name('detect-dns');
+    // DNS Settings Routes (separate from domain-checker to allow independent access)
+    Route::prefix('domain-checker/settings')->name('domain-checker.')->middleware('permission:view_dns_settings')->group(function () {
+        Route::get('/', [App\Http\Controllers\DomainCheckerSettingsController::class, 'index'])->name('settings');
+        Route::post('/', [App\Http\Controllers\DomainCheckerSettingsController::class, 'update'])->name('update-settings');
+        Route::get('/get', [App\Http\Controllers\DomainCheckerSettingsController::class, 'getSettings'])->name('get-settings');
+        Route::get('/detect-dns', [App\Http\Controllers\DomainCheckerSettingsController::class, 'detectDNS'])->name('detect-dns');
 
         // Server DNS Cache Management Routes
-        Route::post('/settings/refresh-server-dns', [App\Http\Controllers\DomainCheckerSettingsController::class, 'refreshServerDNS'])->name('refresh-server-dns');
-        Route::get('/settings/server-dns-status', [App\Http\Controllers\DomainCheckerSettingsController::class, 'getServerDNSStatus'])->name('server-dns-status');
+        Route::post('/refresh-server-dns', [App\Http\Controllers\DomainCheckerSettingsController::class, 'refreshServerDNS'])->name('refresh-server-dns');
+        Route::get('/server-dns-status', [App\Http\Controllers\DomainCheckerSettingsController::class, 'getServerDNSStatus'])->name('server-dns-status');
     });
     
     // Domain History - Protected routes (require authentication)
-    Route::prefix('domain-history')->name('domain-history.')->group(function () {
+    Route::prefix('domain-history')->name('domain-history.')->middleware('permission:view_domain_history')->group(function () {
        Route::get('/history/data', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getHistory'])->name('history-data');
        Route::delete('/history', [App\Http\Controllers\DomainCheckerHistoryController::class, 'deleteHistory'])->name('delete-history');
        Route::delete('/history/clear', [App\Http\Controllers\DomainCheckerHistoryController::class, 'clearHistory'])->name('clear-history');
@@ -56,28 +59,36 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
     
     // Domain Generator Routes
-    Route::prefix('domain-generator')->name('domain-generator.')->group(function () {
+    Route::prefix('domain-generator')->name('domain-generator.')->middleware('permission:view_domain_generator')->group(function () {
         Route::get('/', [App\Http\Controllers\DomainGeneratorController::class, 'index'])->name('index');
         Route::post('/generate', [App\Http\Controllers\DomainGeneratorController::class, 'generate'])->name('generate');
     });
 
     // Admin Routes
-    Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware(['permission:access_admin_panel'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [App\Http\Controllers\AdminController::class, 'index'])->name('index');
         
         // User Management Routes
-        Route::post('/users', [App\Http\Controllers\AdminController::class, 'storeUser'])->name('users.store');
-        Route::put('/users/{user}', [App\Http\Controllers\AdminController::class, 'updateUser'])->name('users.update');
-        Route::delete('/users/{user}', [App\Http\Controllers\AdminController::class, 'deleteUser'])->name('users.delete');
-        Route::get('/users/{user}/data', [App\Http\Controllers\AdminController::class, 'getUserData'])->name('users.data');
+        Route::post('/users', [App\Http\Controllers\AdminController::class, 'storeUser'])->name('users.store')->middleware('permission:manage_users');
+        Route::put('/users/{user}', [App\Http\Controllers\AdminController::class, 'updateUser'])->name('users.update')->middleware('permission:manage_users');
+        Route::delete('/users/{user}', [App\Http\Controllers\AdminController::class, 'deleteUser'])->name('users.delete')->middleware('permission:manage_users');
+        Route::get('/users/{user}/data', [App\Http\Controllers\AdminController::class, 'getUserData'])->name('users.data')->middleware('permission:manage_users');
         
         // Role Management Routes
-        Route::post('/roles', [App\Http\Controllers\AdminController::class, 'storeRole'])->name('roles.store');
-        Route::put('/roles/{role}', [App\Http\Controllers\AdminController::class, 'updateRole'])->name('roles.update');
-        Route::delete('/roles/{role}', [App\Http\Controllers\AdminController::class, 'deleteRole'])->name('roles.delete');
-        Route::get('/roles/{role}/data', [App\Http\Controllers\AdminController::class, 'getRoleData'])->name('roles.data');
+        Route::post('/roles', [App\Http\Controllers\AdminController::class, 'storeRole'])->name('roles.store')->middleware('permission:manage_roles');
+        Route::put('/roles/{role}', [App\Http\Controllers\AdminController::class, 'updateRole'])->name('roles.update')->middleware('permission:manage_roles');
+        Route::delete('/roles/{role}', [App\Http\Controllers\AdminController::class, 'deleteRole'])->name('roles.delete')->middleware('permission:manage_roles');
+        Route::get('/roles/{role}/data', [App\Http\Controllers\AdminController::class, 'getRoleData'])->name('roles.data')->middleware('permission:manage_roles');
+        
+        // Admin Registration Routes (for creating new users)
+        Route::get('/register', [App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])->name('register');
+        Route::post('/register', [App\Http\Controllers\Auth\RegisteredUserController::class, 'store'])->name('register.store');
     });
 });
+
+// Error handling routes
+Route::get('/403', [App\Http\Controllers\ErrorController::class, 'permissionDenied'])->name('errors.permission-denied');
+Route::get('/404', [App\Http\Controllers\ErrorController::class, 'notFound'])->name('errors.not-found');
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

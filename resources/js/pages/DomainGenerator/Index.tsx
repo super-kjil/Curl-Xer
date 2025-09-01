@@ -402,6 +402,7 @@ export default function UrlGeneratorIndex() {
                                         </Badge>
                                     </div>
                                     <Textarea
+                                        id="urls"
                                         value={urls}
                                         onChange={(e) => setUrls(e.target.value)}
                                         className="h-32 resize-y mt-2 min-h-80 max-h-100"
@@ -418,6 +419,7 @@ export default function UrlGeneratorIndex() {
                                         </Label>
                                         <div className="relative">
                                             <Input
+                                                id="prefix"
                                                 value={prefix}
                                                 onChange={(e) => setPrefix(e.target.value)}
                                                 className="pl-8"
@@ -435,6 +437,7 @@ export default function UrlGeneratorIndex() {
                                         </Label>
                                         <div className="flex">
                                             <Input
+                                                id="date"
                                                 value={date}
                                                 onChange={(e) => setDate(e.target.value)}
                                                 className="rounded-r-none"
@@ -452,19 +455,21 @@ export default function UrlGeneratorIndex() {
                                         <div className="space-y-2">
                                             <div className="flex items-center space-x-2">
                                                 <Checkbox
+                                                    id="includeWww"
                                                     checked={includeWww}
                                                     onCheckedChange={(checked) => setIncludeWww(checked as boolean)}
                                                 />
-                                                <Label htmlFor="include-www" className="text-sm">
+                                                <Label htmlFor="includeWww" className="text-sm">
                                                     With www
                                                 </Label>
                                             </div>
                                             <div className="flex items-center space-x-2">
                                                 <Checkbox
+                                                    id="includeNonWww"
                                                     checked={includeNonWww}
                                                     onCheckedChange={(checked) => setIncludeNonWww(checked as boolean)}
                                                 />
-                                                <Label htmlFor="include-non-www" className="text-sm">
+                                                <Label htmlFor="includeNonWww" className="text-sm">
                                                     Without www
                                                 </Label>
                                             </div>

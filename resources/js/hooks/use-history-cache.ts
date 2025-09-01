@@ -40,6 +40,12 @@ interface CachedHistory {
     version: string;
     truncated?: boolean;
     totalItems?: number;
+    compressed?: boolean;
+}
+
+interface DBCachedData extends CachedHistory {
+    key?: string;
+    value?: unknown;
 }
 
 const CACHE_KEY = 'domain-checker-history-cache';
@@ -83,14 +89,14 @@ class IndexedDBCache {
         });
     }
 
-    async get(key: string): Promise<unknown> {
+    async get(key: string): Promise<CachedHistory | null> {
         const db = await this.initDB();
         const transaction = db.transaction([this.storeName], 'readonly');
         const store = transaction.objectStore(this.storeName);
         
         return new Promise((resolve, reject) => {
             const request = store.get(key);
-            request.onsuccess = () => resolve(request.result?.value);
+            request.onsuccess = () => resolve(request.result?.value as CachedHistory || null);
             request.onerror = () => reject(request.error);
         });
     }
@@ -157,8 +163,10 @@ export const useHistoryCache = () => {
                 // Handle compressed data
                 if (dbCached.compressed) {
                     try {
-                        const decompressed = decompress(dbCached.data);
-                        const parsed = JSON.parse(decompressed);
+                        const compressedData = dbCached.data as unknown as string;
+                        const decompressed = decompress(compressedData);
+                        if (!decompressed) return null;
+                        const parsed = JSON.parse(decompressed) as CachedHistory;
                         return parsed.data;
                     } catch (decompressError) {
                         console.warn('Failed to decompress cached data:', decompressError);
@@ -182,6 +190,7 @@ export const useHistoryCache = () => {
         }
     }, []);
 
+    // Save data in chunks for better performance
     // Smart cache saving with compression and chunking
     const saveToCache = useCallback(async (data: GroupedHistoryItem[]) => {
         try {
@@ -208,7 +217,23 @@ export const useHistoryCache = () => {
                 }
 
                 // Also save chunks for better performance
-                await saveChunks(data);
+                const chunks = [];
+                for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+                    chunks.push(data.slice(i, i + CHUNK_SIZE));
+                }
+
+                // Store chunk metadata
+                const chunkMeta = {
+                    totalChunks: chunks.length,
+                    timestamp: Date.now(),
+                    version: CACHE_VERSION
+                };
+                await dbCache.set(`${CACHE_KEY}_chunks_meta`, chunkMeta);
+
+                // Store each chunk
+                for (let i = 0; i < chunks.length; i++) {
+                    await dbCache.set(`${CACHE_KEY}_chunk_${i}`, chunks[i]);
+                }
             } else {
                 // Small dataset: Use localStorage
                 try {
@@ -244,9 +269,7 @@ export const useHistoryCache = () => {
                 // At this point, we can't cache anything - user will need to reload from API
             }
         }
-    }, [saveChunks]);
-
-    // Save data in chunks for better performance
+    }, []);
     const saveChunks = useCallback(async (data: GroupedHistoryItem[]) => {
         try {
             const chunks = [];
