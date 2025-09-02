@@ -82,7 +82,7 @@ export default function DomainCheckerSettings() {
                                 {/* Server DNS Detection */}
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        <label className="text-sm font-medium  dark:text-gray-300">
                                             Auto detect DNS server
                                         </label>
                                         <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -108,7 +108,7 @@ export default function DomainCheckerSettings() {
 
                                 {/* Primary DNS (Read-only for server DNS) */}
                                 <div>
-                                    <label className="mb-1 block text-sm font-medium text-gray-700">Primary DNS (Server)</label>
+                                    <label className="mb-1 block text-sm font-medium ">Primary DNS (Server)</label>
                                     <Input
                                         value={settings.primary_dns || ''}
                                         className="cursor-not-allowed"
@@ -122,7 +122,7 @@ export default function DomainCheckerSettings() {
 
                                 {/* Secondary DNS (Read-only for server DNS) */}
                                 <div>
-                                    <label className="mb-1 block text-sm font-medium text-gray-700">Secondary DNS (Server)</label>
+                                    <label className="mb-1 block text-sm font-medium ">Secondary DNS (Server)</label>
                                     <Input
                                         type="text"
                                         value={settings.secondary_dns || ''}
@@ -138,7 +138,7 @@ export default function DomainCheckerSettings() {
                                 {/* Custom DNS Servers */}
                                 {/* <div>
                                     <div className="mb-2 flex items-center justify-between">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Custom DNS Servers</label>
+                                        <label className="text-sm font-medium  dark:text-gray-300">Custom DNS Servers</label>
                                         <button onClick={handleAddCustomDNS} className="text-sm text-blue-500 hover:text-blue-600">
                                             <i className="fas fa-plus mr-1"></i>
                                             Add
@@ -171,7 +171,7 @@ export default function DomainCheckerSettings() {
 
                                 {/* Batch Size */}
                                 <div>
-                                    <label className="mb-1 block text-sm font-medium text-gray-700">Batch Size</label>
+                                    <label className="mb-1 block text-sm font-medium ">Batch Size</label>
                                     <Input
                                         type="number"
                                         value={settings.batch_size || 100}
@@ -187,7 +187,7 @@ export default function DomainCheckerSettings() {
 
                                 {/* Large URL Batch Size */}
                                 <div>
-                                    <label className="mb-1 block text-sm font-medium text-gray-700">Large URL Batch Size</label>
+                                    <label className="mb-1 block text-sm font-medium ">Large URL Batch Size</label>
                                     <Input
                                         type="number"
                                         value={settings.large_batch_size || 1000}
@@ -203,7 +203,7 @@ export default function DomainCheckerSettings() {
 
                                 {/* Timeout */}
                                 <div>
-                                    <label className="mb-1 block text-sm font-medium text-gray-700">Timeout (seconds)</label>
+                                    <label className="mb-1 block text-sm font-medium ">Timeout (seconds)</label>
                                     <Input
                                         type="number"
                                         value={settings.timeout || 30}

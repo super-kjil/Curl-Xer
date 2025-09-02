@@ -6,8 +6,8 @@ export default function AppLogo() {
             <div className="flex aspect-square size-12 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                 <AppLogoIcon className="fill-current text-white dark:text-black"/>
             </div>
-            <div className="ml-1 grid flex-1 text-left text-sm">
-                <span className="mb-0.5 truncate leading-tight font-semibold">Curl-Xer</span>
+            <div className="ml-1 grid flex-1 text-left">
+                <span className="mb-0.5 truncate leading-tight font-bold text-2xl">Curl Xer</span>
             </div>
         </>
     );

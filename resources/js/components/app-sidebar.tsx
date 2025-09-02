@@ -114,7 +114,7 @@ export function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent>
+            <SidebarContent className="pt-4">
                 <NavMain items={filteredMainNavItems} />
             </SidebarContent>
 
