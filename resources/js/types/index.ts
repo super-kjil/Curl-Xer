@@ -72,19 +72,24 @@ export interface PermissionHelpers {
 }
 
 export interface GroupedHistoryItem {
-    id: number;
     command: string;
-    batches: BatchItem[];
     totalUrls: number;
     avgSuccessRate: number;
-    created_at: string;
-    updated_at: string;
+    latestTimestamp: string;
+    batches: BatchItem[];
+    primaryDns: string;
+    secondaryDns: string;
 }
 
 export interface BatchItem {
-    id: number;
-    domain_check_result_id: number;
+    id: string;
+    command: string;
+    urlCount: number;
     results?: DomainCheckResult[];
+    timestamp: string;
+    successRate: number;
+    primaryDns: string;
+    secondaryDns: string;
 }
 
 export interface DomainCheckResult {

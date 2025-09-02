@@ -13,22 +13,26 @@ export function usePermissions(): PermissionHelpers {
 
     const hasRole = (role: string): boolean => {
         if (!user || !user.roles) return false;
-        return user.roles.some((r: Role) => r.name === role);
+        // Accept either array of role objects or array of role names
+        return (user.roles as any[]).some((r: any) => (typeof r === 'string' ? r === role : r?.name === role));
     };
 
     const hasPermission = (permission: string): boolean => {
         if (!user || !user.permissions) return false;
-        return user.permissions.some((p: Permission) => p.name === permission);
+        // Accept either array of permission objects or array of permission names
+        return (user.permissions as any[]).some((p: any) => (typeof p === 'string' ? p === permission : p?.name === permission));
     };
 
     const hasAnyRole = (roles: string[]): boolean => {
         if (!user || !user.roles) return false;
-        return roles.some(role => user.roles!.some((r: Role) => r.name === role));
+        const userRoles = user.roles as any[];
+        return roles.some(role => userRoles.some((r: any) => (typeof r === 'string' ? r === role : r?.name === role)));
     };
 
     const hasAnyPermission = (permissions: string[]): boolean => {
         if (!user || !user.permissions) return false;
-        return permissions.some(permission => user.permissions!.some((p: Permission) => p.name === permission));
+        const userPerms = user.permissions as any[];
+        return permissions.some(perm => userPerms.some((p: any) => (typeof p === 'string' ? p === perm : p?.name === perm)));
     };
 
     const can = (permission: string): boolean => {

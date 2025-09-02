@@ -366,11 +366,21 @@ export const useHistoryCache = () => {
         }
     }, [loadFromCache, saveToCache]);
 
-    // Delete history item
+    // Delete history item (group)
     const deleteHistoryItem = useCallback(async (command: string) => {
         try {
-            const response = await axios.delete('/domain-history/history', {
-                data: { id: command },
+            // Find the group by command
+            const group = history.find(item => item.command === command);
+            if (!group || !group.batches || group.batches.length === 0) {
+                toast.error('No batches found to delete');
+                return;
+            }
+
+            // Collect all batch IDs from the group
+            const batchIds = group.batches.map(batch => batch.id).join(',');
+            
+            const response = await axios.post('/domain-history/history/delete-batches', {
+                ids: batchIds,
             });
             
             if (response.data.success) {
@@ -380,7 +390,8 @@ export const useHistoryCache = () => {
                 await saveToCache(updatedHistory);
                 toast.success('History item deleted');
             } else {
-                toast.error('Failed to delete history item');
+                const errorMessage = response.data.message || 'Failed to delete history item';
+                toast.error(errorMessage);
             }
         } catch (error: unknown) {
             console.error('Failed to delete history item:', error);

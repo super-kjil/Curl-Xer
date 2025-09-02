@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 
@@ -46,7 +48,7 @@ class DomainCheckerHistoryController extends Controller
         $items = $rows->map(function ($row) {
             return [
                 'id' => (string)$row->id,
-                'command' => null,
+                'command' => (string)$row->id, // Use ID as command identifier
                 'url_count' => (int)($row->url_count ?? 0),
                 'success_rate' => (int)($row->success_rate ?? 0),
                 'primary_dns' => '',
@@ -70,22 +72,65 @@ class DomainCheckerHistoryController extends Controller
             return response()->json(['success' => false, 'message' => 'Authentication required'], 401);
         }
 
+        // Check if user has admin role
+        $user = Auth::user();
+        // Check if user has admin role using direct database query
+        $hasAdminRole = DB::table('model_has_roles')
+            ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+            ->where('model_has_roles.model_id', $user->id)
+            ->where('model_has_roles.model_type', 'App\\Models\\User')
+            ->where('roles.name', 'admin')
+            ->exists();
+        if (!$hasAdminRole) {
+            return response()->json(['success' => false, 'message' => 'Admin privileges required'], 403);
+        }
+
         $request->validate([
             'id' => 'required|string'
         ]);
 
-        $batchId = $request->id;
+        $batchId = $request->id; // This is the batch ID
+        
+        // Delete the specific batch by ID
         $hasUserId = Schema::hasColumn('domain_check_batches', 'user_id');
         $query = DB::table('domain_check_batches')->where('id', $batchId);
-        if ($hasUserId) {
-            $query->where('user_id', Auth::id());
-        }
-        $deleted = $query->delete();
-        if (!$deleted) {
+        
+        // Check if the batch exists first
+        $batch = $query->first();
+        if (!$batch) {
             return response()->json(['success' => false, 'message' => 'History item not found'], 404);
         }
-        Cache::increment('history:user:' . Auth::id() . ':v');
-        return response()->json(['success' => true, 'message' => 'History item deleted']);
+        
+        // For admin users, they can delete any history item
+        // For regular users, they can only delete their own history items
+        if ($hasUserId && !$hasAdminRole) {
+            $query->where('user_id', Auth::id());
+        }
+        
+        try {
+            // Since we have cascade delete, we only need to delete the batch
+            // The related results will be automatically deleted by the database
+            $deleted = $query->delete();
+            
+            if ($deleted == 0) {
+                return response()->json(['success' => false, 'message' => 'Failed to delete batch'], 500);
+            }
+            
+            Cache::increment('history:user:' . Auth::id() . ':v');
+            return response()->json([
+                'success' => true, 
+                'message' => 'History item deleted',
+                'batch_deleted' => $deleted
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to delete history item: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'batch_id' => $batchId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['success' => false, 'message' => 'Database error occurred while deleting'], 500);
+        }
     }
 
     public function clearHistory()
@@ -95,20 +140,49 @@ class DomainCheckerHistoryController extends Controller
             return response()->json(['success' => false, 'message' => 'Authentication required'], 401);
         }
 
-        $hasUserId = Schema::hasColumn('domain_check_batches', 'user_id');
-        $query = DB::table('domain_check_batches');
-        if ($hasUserId) {
-            $query->where('user_id', Auth::id());
+        // Check if user has admin role
+        $user = Auth::user();
+        // Check if user has admin role using direct database query
+        $hasAdminRole = DB::table('model_has_roles')
+            ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+            ->where('model_has_roles.model_id', $user->id)
+            ->where('model_has_roles.model_type', 'App\\Models\\User')
+            ->where('roles.name', 'admin')
+            ->exists();
+        if (!$hasAdminRole) {
+            return response()->json(['success' => false, 'message' => 'Admin privileges required'], 403);
         }
-        $query->delete();
-        
-        // bump cache version to invalidate history cache
-        Cache::increment('history:user:' . Auth::id() . ':v');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'History cleared'
-        ]);
+        // Since we have cascade delete, we only need to delete the batches
+        // The related results will be automatically deleted by the database
+        $hasUserId = Schema::hasColumn('domain_check_batches', 'user_id');
+        $batchQuery = DB::table('domain_check_batches');
+        
+        // For admin users, they can clear all history
+        // For regular users, they can only clear their own history
+        if ($hasUserId && !$hasAdminRole) {
+            $batchQuery->where('user_id', Auth::id());
+        }
+        
+        try {
+            $batchesDeleted = $batchQuery->delete();
+            
+            // bump cache version to invalidate history cache
+            Cache::increment('history:user:' . Auth::id() . ':v');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'History cleared',
+                'batches_deleted' => $batchesDeleted
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to clear history: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['success' => false, 'message' => 'Database error occurred while clearing history'], 500);
+        }
     }
 
     public function getHistoryDetails(Request $request)
@@ -118,6 +192,16 @@ class DomainCheckerHistoryController extends Controller
             return response()->json(['success' => false, 'message' => 'Authentication required'], 401);
         }
 
+        // Check if user has admin role
+        $user = Auth::user();
+        // Check if user has admin role using direct database query
+        $hasAdminRole = DB::table('model_has_roles')
+            ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+            ->where('model_has_roles.model_id', $user->id)
+            ->where('model_has_roles.model_type', 'App\\Models\\User')
+            ->where('roles.name', 'admin')
+            ->exists();
+
         $request->validate([
             'id' => 'required|string'
         ]);
@@ -125,9 +209,13 @@ class DomainCheckerHistoryController extends Controller
         $batchId = $request->id;
         $hasUserId = Schema::hasColumn('domain_check_batches', 'user_id');
         $batchQuery = DB::table('domain_check_batches')->where('id', $batchId);
-        if ($hasUserId) {
+        
+        // For admin users, they can view any history details
+        // For regular users, they can only view their own history details
+        if ($hasUserId && !$hasAdminRole) {
             $batchQuery->where('user_id', Auth::id());
         }
+        
         $batch = $batchQuery->first();
         if (!$batch) {
             return response()->json(['success' => false, 'message' => 'History item not found'], 404);
@@ -424,6 +512,19 @@ class DomainCheckerHistoryController extends Controller
             return response()->json(['success' => false, 'message' => 'Authentication required'], 401);
         }
 
+        // Check if user has admin role
+        $user = Auth::user();
+        // Check if user has admin role using direct database query
+        $hasAdminRole = DB::table('model_has_roles')
+            ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+            ->where('model_has_roles.model_id', $user->id)
+            ->where('model_has_roles.model_type', 'App\\Models\\User')
+            ->where('roles.name', 'admin')
+            ->exists();
+        if (!$hasAdminRole) {
+            return response()->json(['success' => false, 'message' => 'Admin privileges required'], 403);
+        }
+
         $request->validate([
             'ids' => 'required|string'
         ]);
@@ -433,14 +534,54 @@ class DomainCheckerHistoryController extends Controller
             return response()->json(['success' => false, 'message' => 'No ids provided'], 400);
         }
 
+        // Since we have cascade delete, we only need to delete the batches
+        // The related results will be automatically deleted by the database
         $query = DB::table('domain_check_batches')->whereIn('id', $ids);
-        if (Schema::hasColumn('domain_check_batches', 'user_id')) {
+        
+        // For admin users, they can delete any batches
+        // For regular users, they can only delete their own batches
+        if (Schema::hasColumn('domain_check_batches', 'user_id') && !$hasAdminRole) {
             $query->where('user_id', Auth::id());
         }
 
-        $deleted = $query->delete();
-        Cache::increment('history:user:' . Auth::id() . ':v');
+        try {
+            $deleted = $query->delete();
+            
+            // If no batches were deleted, check if it's due to user permission
+            if ($deleted == 0) {
+                $totalBatches = DB::table('domain_check_batches')->whereIn('id', $ids)->count();
+                
+                if ($totalBatches > 0) {
+                    if ($hasAdminRole) {
+                        return response()->json([
+                            'success' => false, 
+                            'message' => 'Failed to delete batches. Some items may not exist.',
+                            'deleted' => 0
+                        ], 500);
+                    } else {
+                        $userBatches = DB::table('domain_check_batches')->whereIn('id', $ids)->where('user_id', Auth::id())->count();
+                        if ($userBatches == 0) {
+                            return response()->json([
+                                'success' => false, 
+                                'message' => 'You can only delete your own history items',
+                                'deleted' => 0
+                            ], 500);
+                        }
+                    }
+                }
+            }
+            
+            Cache::increment('history:user:' . Auth::id() . ':v');
 
-        return response()->json(['success' => true, 'deleted' => $deleted]);
+            return response()->json(['success' => true, 'deleted' => $deleted]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to delete history batches: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'batch_ids' => $ids,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['success' => false, 'message' => 'Database error occurred while deleting batches'], 500);
+        }
     }
 }

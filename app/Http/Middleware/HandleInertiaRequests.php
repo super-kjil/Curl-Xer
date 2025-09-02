@@ -51,8 +51,9 @@ class HandleInertiaRequests extends Middleware
                     'email_verified_at' => $user->email_verified_at,
                     'created_at' => $user->created_at,
                     'updated_at' => $user->updated_at,
-                    'roles' => $user->roles,
-                    'permissions' => $user->getAllPermissions(),
+                    // Send compact arrays of names for consistent client consumption
+                    'roles' => $user->getRoleNames(),
+                    'permissions' => $user->getAllPermissions()->pluck('name'),
                 ] : null,
             ],
             'ziggy' => fn (): array => [

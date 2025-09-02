@@ -14,10 +14,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('dashboard');
     })->name('dashboard')->middleware('permission:view_dashboard');
 
-    // Domain History - Basic routes
+    // Domain History - All routes
     Route::prefix('domain-history')->name('domain-history.')->middleware('permission:view_domain_history')->group(function () {
         Route::get('/history', [App\Http\Controllers\DomainCheckerHistoryController::class, 'index'])->name('history');
         Route::get('/history/chart-data', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getChartData'])->name('chart-data');
+        Route::get('/history/data', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getHistory'])->name('history-data');
+        Route::delete('/history', [App\Http\Controllers\DomainCheckerHistoryController::class, 'deleteHistory'])->name('delete-history');
+        Route::delete('/history/clear', [App\Http\Controllers\DomainCheckerHistoryController::class, 'clearHistory'])->name('clear-history');
+        Route::get('/history/details', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getHistoryDetails'])->name('history-details');
+        Route::get('/history/grouped', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getGroupedHistory'])->name('history-grouped');
+        Route::post('/history/delete-batches', [App\Http\Controllers\DomainCheckerHistoryController::class, 'deleteHistoryBatches'])->name('delete-history-batches');
+
+        // Legacy-like endpoint to mirror domain-checker/history.php behavior
+        Route::post('/history/legacy', [App\Http\Controllers\DomainCheckerHistoryController::class, 'legacyHistory'])->name('history-legacy');
     });
 
     // Domain Extractor
@@ -43,19 +52,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Server DNS Cache Management Routes
         Route::post('/refresh-server-dns', [App\Http\Controllers\DomainCheckerSettingsController::class, 'refreshServerDNS'])->name('refresh-server-dns');
         Route::get('/server-dns-status', [App\Http\Controllers\DomainCheckerSettingsController::class, 'getServerDNSStatus'])->name('server-dns-status');
-    });
-    
-    // Domain History - Protected routes (require authentication)
-    Route::prefix('domain-history')->name('domain-history.')->middleware('permission:view_domain_history')->group(function () {
-       Route::get('/history/data', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getHistory'])->name('history-data');
-       Route::delete('/history', [App\Http\Controllers\DomainCheckerHistoryController::class, 'deleteHistory'])->name('delete-history');
-       Route::delete('/history/clear', [App\Http\Controllers\DomainCheckerHistoryController::class, 'clearHistory'])->name('clear-history');
-       Route::get('/history/details', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getHistoryDetails'])->name('history-details');
-       Route::get('/history/grouped', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getGroupedHistory'])->name('history-grouped');
-       Route::post('/history/delete-batches', [App\Http\Controllers\DomainCheckerHistoryController::class, 'deleteHistoryBatches'])->name('delete-history-batches');
-
-       // Legacy-like endpoint to mirror domain-checker/history.php behavior
-       Route::post('/history/legacy', [App\Http\Controllers\DomainCheckerHistoryController::class, 'legacyHistory'])->name('history-legacy');
     });
     
     // Domain Generator Routes

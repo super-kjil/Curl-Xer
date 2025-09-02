@@ -8,6 +8,7 @@ import { Head } from '@inertiajs/react';
 import { AlertTriangle, BadgeCheckIcon, CheckCircle, Trash, XCircle, ChevronDown, ChevronUp, History, ClipboardList, RefreshCw, Search, X } from 'lucide-react';
 import { useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import { useHistoryCache } from '@/hooks/use-history-cache';
+import { usePermissions } from '@/hooks/use-permissions';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -59,11 +60,16 @@ export default function DomainCheckerHistory() {
         refreshHistory
     } = useHistoryCache();
     
+    const { hasRole } = usePermissions();
+    const isAdmin = hasRole('admin');
+    
     const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
     const [expandingItems, setExpandingItems] = useState<Set<string>>(new Set());
     const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set());
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [showClearDialog, setShowClearDialog] = useState(false);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<string | null>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     // Highlight search terms in text
@@ -127,7 +133,8 @@ export default function DomainCheckerHistory() {
     }, [expandedResults]);
 
     const openDeleteDialog = (command: string) => {
-        deleteHistoryItem(command);
+        setItemToDelete(command);
+        setShowDeleteDialog(true);
     };
 
     const openClearDialog = () => {
@@ -137,6 +144,14 @@ export default function DomainCheckerHistory() {
     const clearHistory = async () => {
         await clearAllHistory();
         setShowClearDialog(false);
+    };
+
+    const confirmDeleteHistory = async () => {
+        if (itemToDelete) {
+            await deleteHistoryItem(itemToDelete);
+            setShowDeleteDialog(false);
+            setItemToDelete(null);
+        }
     };
 
     const getStatusColorClass = (status: number) => {
@@ -158,7 +173,17 @@ export default function DomainCheckerHistory() {
             toast.error('No results to copy');
             return;
         }
-        const urls = allResults.map((result) => `${result.url}      ${new Date(result.timestamp).toLocaleDateString()}`);
+        
+        // Format date to DD/MM/YYYY
+        const formatDate = (timestamp: string) => {
+            const date = new Date(timestamp);
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        };
+        
+        const urls = allResults.map((result) => `${result.url}      ${formatDate(result.timestamp)}`);
         const textToCopy = urls.join('\n');
         
         // Modern clipboard API with fallback
@@ -254,15 +279,19 @@ export default function DomainCheckerHistory() {
                                 <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                                 Refresh
                             </Button>
-                            {history.length > 0 && (
-                                <Button
-                                    variant="destructive"
-                                    onClick={openClearDialog} 
-                                    title="Clear all history"
-                                    >
-                                    <Trash className="mr-2" />
-                                    Erase All History
-                                </Button>
+                            {isAdmin && (
+                                <>
+                                    {history.length > 0 && (
+                                        <Button
+                                            variant="destructive"
+                                            onClick={openClearDialog} 
+                                            title="Clear all history"
+                                            >
+                                            <Trash className="mr-2" />
+                                            Erase All History
+                                        </Button>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>
@@ -373,13 +402,15 @@ export default function DomainCheckerHistory() {
                                                     Copy
                                                 </Button>
 
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() => openDeleteDialog(item.command)}
-                                                    title="Delete"
-                                                >
-                                                    Delete
-                                                </Button>
+                                                {isAdmin && (
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => openDeleteDialog(item.command)}
+                                                        title="Delete"
+                                                    >
+                                                        Delete
+                                                    </Button>
+                                                )}
 
                                                 <Button
                                                     variant="outline"
@@ -512,6 +543,29 @@ export default function DomainCheckerHistory() {
                         </Button>
                         <Button variant="destructive" onClick={clearHistory}>
                             Clear All
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete History Item Confirmation Dialog */}
+            <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-red-500" />
+                            Delete History Item
+                        </DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete this history item? This action cannot be undone and will permanently delete all associated data.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={confirmDeleteHistory}>
+                            Delete
                         </Button>
                     </DialogFooter>
                 </DialogContent>

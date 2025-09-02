@@ -11,118 +11,8 @@ export default function Welcome() {
                 <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
             </Head>
             <div className="flex min-h-screen flex-col items-center bg-[#FDFDFC] p-6 text-[#1b1b18] lg:justify-center lg:p-8 dark:bg-[#0a0a0a]">
-                <header className="mb-6 w-full max-w-[335px] text-sm not-has-[nav]:hidden lg:max-w-4xl">
-                    <nav className="flex items-center justify-end gap-4">
-                        {auth.user ? (
-                            <Link
-                                href={route('dashboard')}
-                                className="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
-                            >
-                                Dashboard
-                            </Link>
-                        ) : (
-                            <>
-                                <Link
-                                    href={route('login')}
-                                    className="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
-                                >
-                                    Log in
-                                </Link>
-                                {/* <Link
-                                    href={route('register')}
-                                    className="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
-                                >
-                                    Register
-                                </Link> */}
-                            </>
-                        )}
-                    </nav>
-                </header>
-                <div className="flex w-full items-center justify-center opacity-100 transition-opacity duration-750 lg:grow starting:opacity-0">
+                <div className="flex flex-col gap-4 w-full items-center justify-center opacity-100 transition-opacity duration-750 lg:grow starting:opacity-0">
                     <main className="flex items-center justify-center">
-                        {/* <div className="flex-1 rounded-br-lg rounded-bl-lg bg-white p-6 pb-12 text-[13px] leading-[20px] shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] lg:rounded-tl-lg lg:rounded-br-none lg:p-20 dark:bg-[#161615] dark:text-[#EDEDEC] dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d]">
-                            <h1 className="mb-1 font-medium">Let's get started</h1>
-                            <p className="mb-2 text-[#706f6c] dark:text-[#A1A09A]">
-                                Laravel has an incredibly rich ecosystem.
-                                <br />
-                                We suggest starting with the following.
-                            </p>
-                            <ul className="mb-4 flex flex-col lg:mb-6">
-                                <li className="relative flex items-center gap-4 py-2 before:absolute before:top-1/2 before:bottom-0 before:left-[0.4rem] before:border-l before:border-[#e3e3e0] dark:before:border-[#3E3E3A]">
-                                    <span className="relative bg-white py-1 dark:bg-[#161615]">
-                                        <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-[#e3e3e0] bg-[#FDFDFC] shadow-[0px_0px_1px_0px_rgba(0,0,0,0.03),0px_1px_2px_0px_rgba(0,0,0,0.06)] dark:border-[#3E3E3A] dark:bg-[#161615]">
-                                            <span className="h-1.5 w-1.5 rounded-full bg-[#dbdbd7] dark:bg-[#3E3E3A]" />
-                                        </span>
-                                    </span>
-                                    <span>
-                                        Read the
-                                        <a
-                                            href="https://laravel.com/docs"
-                                            target="_blank"
-                                            className="ml-1 inline-flex items-center space-x-1 font-medium text-[#f53003] underline underline-offset-4 dark:text-[#FF4433]"
-                                        >
-                                            <span>Documentation</span>
-                                            <svg
-                                                width={10}
-                                                height={11}
-                                                viewBox="0 0 10 11"
-                                                fill="none"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="h-2.5 w-2.5"
-                                            >
-                                                <path
-                                                    d="M7.70833 6.95834V2.79167H3.54167M2.5 8L7.5 3.00001"
-                                                    stroke="currentColor"
-                                                    strokeLinecap="square"
-                                                />
-                                            </svg>
-                                        </a>
-                                    </span>
-                                </li>
-                                <li className="relative flex items-center gap-4 py-2 before:absolute before:top-0 before:bottom-1/2 before:left-[0.4rem] before:border-l before:border-[#e3e3e0] dark:before:border-[#3E3E3A]">
-                                    <span className="relative bg-white py-1 dark:bg-[#161615]">
-                                        <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-[#e3e3e0] bg-[#FDFDFC] shadow-[0px_0px_1px_0px_rgba(0,0,0,0.03),0px_1px_2px_0px_rgba(0,0,0,0.06)] dark:border-[#3E3E3A] dark:bg-[#161615]">
-                                            <span className="h-1.5 w-1.5 rounded-full bg-[#dbdbd7] dark:bg-[#3E3E3A]" />
-                                        </span>
-                                    </span>
-                                    <span>
-                                        Watch video tutorials at
-                                        <a
-                                            href="https://laracasts.com"
-                                            target="_blank"
-                                            className="ml-1 inline-flex items-center space-x-1 font-medium text-[#f53003] underline underline-offset-4 dark:text-[#FF4433]"
-                                        >
-                                            <span>Laracasts</span>
-                                            <svg
-                                                width={10}
-                                                height={11}
-                                                viewBox="0 0 10 11"
-                                                fill="none"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="h-2.5 w-2.5"
-                                            >
-                                                <path
-                                                    d="M7.70833 6.95834V2.79167H3.54167M2.5 8L7.5 3.00001"
-                                                    stroke="currentColor"
-                                                    strokeLinecap="square"
-                                                />
-                                            </svg>
-                                        </a>
-                                    </span>
-                                </li>
-                            </ul>
-                            <ul className="flex gap-3 text-sm leading-normal">
-                                <li>
-                                    <a
-                                        href="https://cloud.laravel.com"
-                                        target="_blank"
-                                        className="inline-block rounded-sm border border-black bg-[#1b1b18] px-5 py-1.5 text-sm leading-normal text-white hover:border-black hover:bg-black dark:border-[#eeeeec] dark:bg-[#eeeeec] dark:text-[#1C1C1A] dark:hover:border-white dark:hover:bg-white"
-                                    >
-                                        Deploy now
-                                    </a>
-                                </li>
-                            </ul>
-                        </div> */}
                         <div className="relative -mb-px aspect-[335/376] w-full shrink-0 overflow-hidden rounded-t-lg bg-[#fff2f2] lg:mb-0 lg:-ml-px lg:aspect-auto lg:w-[438px] lg:rounded-t-none lg:rounded-r-lg dark:bg-[#1D0002]">
                             <svg
                                 className="w-full max-w-none translate-y-0 text-[#F53003] opacity-100 transition-all duration-750 dark:text-[#F61500] starting:translate-y-6 starting:opacity-0"
@@ -130,25 +20,10 @@ export default function Welcome() {
                                 fill="none"
                                 xmlns="http://www.w3.org/2000/svg"
                             >
-                                <path d="M17.2036 -3H0V102.197H49.5189V86.7187H17.2036V-3Z" fill="currentColor" />
+                                {/* Curlxer SVG  */}
                                 <path
-                                    d="M110.256 41.6337C108.061 38.1275 104.945 35.3731 100.905 33.3681C96.8667 31.3647 92.8016 30.3618 88.7131 30.3618C83.4247 30.3618 78.5885 31.3389 74.201 33.2923C69.8111 35.2456 66.0474 37.928 62.9059 41.3333C59.7643 44.7401 57.3198 48.6726 55.5754 53.1293C53.8287 57.589 52.9572 62.274 52.9572 67.1813C52.9572 72.1925 53.8287 76.8995 55.5754 81.3069C57.3191 85.7173 59.7636 89.6241 62.9059 93.0293C66.0474 96.4361 69.8119 99.1155 74.201 101.069C78.5885 103.022 83.4247 103.999 88.7131 103.999C92.8016 103.999 96.8667 102.997 100.905 100.994C104.945 98.9911 108.061 96.2359 110.256 92.7282V102.195H126.563V32.1642H110.256V41.6337ZM108.76 75.7472C107.762 78.4531 106.366 80.8078 104.572 82.8112C102.776 84.8161 100.606 86.4183 98.0637 87.6206C95.5202 88.823 92.7004 89.4238 89.6103 89.4238C86.5178 89.4238 83.7252 88.823 81.2324 87.6206C78.7388 86.4183 76.5949 84.8161 74.7998 82.8112C73.004 80.8078 71.6319 78.4531 70.6856 75.7472C69.7356 73.0421 69.2644 70.1868 69.2644 67.1821C69.2644 64.1758 69.7356 61.3205 70.6856 58.6154C71.6319 55.9102 73.004 53.5571 74.7998 51.5522C76.5949 49.5495 78.738 47.9451 81.2324 46.7427C83.7252 45.5404 86.5178 44.9396 89.6103 44.9396C92.7012 44.9396 95.5202 45.5404 98.0637 46.7427C100.606 47.9451 102.776 49.5487 104.572 51.5522C106.367 53.5571 107.762 55.9102 108.76 58.6154C109.756 61.3205 110.256 64.1758 110.256 67.1821C110.256 70.1868 109.756 73.0421 108.76 75.7472Z"
-                                    fill="currentColor"
-                                />
-                                <path
-                                    d="M242.805 41.6337C240.611 38.1275 237.494 35.3731 233.455 33.3681C229.416 31.3647 225.351 30.3618 221.262 30.3618C215.974 30.3618 211.138 31.3389 206.75 33.2923C202.36 35.2456 198.597 37.928 195.455 41.3333C192.314 44.7401 189.869 48.6726 188.125 53.1293C186.378 57.589 185.507 62.274 185.507 67.1813C185.507 72.1925 186.378 76.8995 188.125 81.3069C189.868 85.7173 192.313 89.6241 195.455 93.0293C198.597 96.4361 202.361 99.1155 206.75 101.069C211.138 103.022 215.974 103.999 221.262 103.999C225.351 103.999 229.416 102.997 233.455 100.994C237.494 98.9911 240.611 96.2359 242.805 92.7282V102.195H259.112V32.1642H242.805V41.6337ZM241.31 75.7472C240.312 78.4531 238.916 80.8078 237.122 82.8112C235.326 84.8161 233.156 86.4183 230.614 87.6206C228.07 88.823 225.251 89.4238 222.16 89.4238C219.068 89.4238 216.275 88.823 213.782 87.6206C211.289 86.4183 209.145 84.8161 207.35 82.8112C205.554 80.8078 204.182 78.4531 203.236 75.7472C202.286 73.0421 201.814 70.1868 201.814 67.1821C201.814 64.1758 202.286 61.3205 203.236 58.6154C204.182 55.9102 205.554 53.5571 207.35 51.5522C209.145 49.5495 211.288 47.9451 213.782 46.7427C216.275 45.5404 219.068 44.9396 222.16 44.9396C225.251 44.9396 228.07 45.5404 230.614 46.7427C233.156 47.9451 235.326 49.5487 237.122 51.5522C238.917 53.5571 240.312 55.9102 241.31 58.6154C242.306 61.3205 242.806 64.1758 242.806 67.1821C242.805 70.1868 242.305 73.0421 241.31 75.7472Z"
-                                    fill="currentColor"
-                                />
-                                <path d="M438 -3H421.694V102.197H438V-3Z" fill="currentColor" />
-                                <path d="M139.43 102.197H155.735V48.2834H183.712V32.1665H139.43V102.197Z" fill="currentColor" />
-                                <path
-                                    d="M324.49 32.1665L303.995 85.794L283.498 32.1665H266.983L293.748 102.197H314.242L341.006 32.1665H324.49Z"
-                                    fill="currentColor"
-                                />
-                                <path
-                                    d="M376.571 30.3656C356.603 30.3656 340.797 46.8497 340.797 67.1828C340.797 89.6597 356.094 104 378.661 104C391.29 104 399.354 99.1488 409.206 88.5848L398.189 80.0226C398.183 80.031 389.874 90.9895 377.468 90.9895C363.048 90.9895 356.977 79.3111 356.977 73.269H411.075C413.917 50.1328 398.775 30.3656 376.571 30.3656ZM357.02 61.0967C357.145 59.7487 359.023 43.3761 376.442 43.3761C393.861 43.3761 395.978 59.7464 396.099 61.0967H357.02Z"
-                                    fill="currentColor"
-                                />
+                                    d="M 76.582 60.117 L 84.024 24.785 L 106.7 24.785 L 99.141 60.938 Q 98.789 62.461 98.409 64.805 Q 98.028 67.148 98.028 69.199 Q 98.028 71.719 99.346 72.979 Q 100.664 74.238 102.481 74.238 Q 104.473 74.238 106.494 72.422 Q 108.516 70.605 110.303 66.797 Q 112.09 62.988 113.321 57.07 L 120.118 24.785 L 142.793 24.785 L 128.789 91.172 L 110.625 91.172 L 111.387 81.914 L 110.918 81.914 Q 108.75 85.605 106.114 87.92 Q 103.477 90.234 100.166 91.289 Q 96.856 92.344 92.637 92.344 Q 86.485 92.344 82.618 89.766 Q 78.75 87.188 76.934 82.91 Q 75.118 78.633 75.118 73.535 Q 75.118 70.195 75.528 66.709 Q 75.938 63.223 76.582 60.117 Z M 255.176 91.172 L 228.633 91.172 L 256.348 57.305 L 244.219 24.785 L 268.946 24.785 L 273.399 43.184 L 284.297 24.785 L 311.192 24.785 L 283.946 58.535 L 297.305 91.172 L 272.227 91.172 L 267.539 71.953 L 255.176 91.172 Z M 73.711 11.836 L 65.039 29.707 Q 59.59 26.484 55.02 24.873 Q 50.45 23.262 45.528 23.262 Q 41.368 23.262 37.881 25.137 Q 34.395 27.012 31.67 30.352 Q 28.946 33.691 27.041 38.057 Q 25.137 42.422 24.17 47.49 Q 23.203 52.559 23.203 57.832 Q 23.203 65.625 26.514 69.521 Q 29.825 73.418 35.918 73.418 Q 41.133 73.418 46.114 72.129 Q 51.094 70.84 57.481 68.145 L 57.481 87.07 Q 51.211 89.883 44.795 91.113 Q 38.379 92.344 31.7 92.344 Q 20.977 92.344 13.946 88.154 Q 6.914 83.965 3.457 76.465 Q 0 68.965 0 59.004 Q 0 51.328 1.641 43.535 Q 3.282 35.742 6.739 28.682 Q 10.196 21.621 15.586 16.084 Q 20.977 10.547 28.418 7.354 Q 35.86 4.16 45.528 4.16 Q 54.082 4.16 60.879 6.182 Q 67.676 8.203 73.711 11.836 Z M 334.688 66.445 L 331.231 66.445 L 331.231 66.885 L 331.231 67.383 Q 331.231 71.836 333.633 73.945 Q 336.036 76.055 340.84 76.055 Q 345.879 76.055 350.391 74.531 Q 354.903 73.008 360.059 70.313 L 360.059 86.367 Q 354.727 89.063 349.043 90.703 Q 343.36 92.344 334.688 92.344 Q 326.309 92.344 320.45 89.18 Q 314.59 86.016 311.514 80.127 Q 308.438 74.238 308.438 66.094 Q 308.438 57.949 310.752 50.332 Q 313.067 42.715 317.784 36.68 Q 322.5 30.645 329.649 27.129 Q 336.797 23.613 346.465 23.613 Q 357.657 23.613 364.014 28.652 Q 370.371 33.691 370.371 42.07 Q 370.371 47.578 368.262 52.061 Q 366.153 56.543 361.787 59.766 Q 357.422 62.988 350.684 64.717 Q 343.946 66.445 334.688 66.445 Z M 168.164 91.172 L 145.489 91.172 L 159.493 24.785 L 177.598 24.785 L 176.543 35.859 L 177.012 35.859 Q 179.766 31.172 182.637 28.506 Q 185.508 25.84 188.994 24.727 Q 192.481 23.613 196.934 23.613 Q 198.223 23.613 199.659 23.76 Q 201.094 23.906 201.621 24.082 L 196.7 46.523 Q 195.411 45.996 193.536 45.615 Q 191.661 45.234 189.493 45.234 Q 186.856 45.234 184.541 46.084 Q 182.227 46.934 180.323 48.838 Q 178.418 50.742 176.924 53.994 Q 175.43 57.246 174.375 61.992 L 168.164 91.172 Z M 397.032 91.172 L 374.356 91.172 L 388.36 24.785 L 406.465 24.785 L 405.411 35.859 L 405.879 35.859 Q 408.633 31.172 411.504 28.506 Q 414.375 25.84 417.862 24.727 Q 421.348 23.613 425.801 23.613 Q 427.09 23.613 428.526 23.76 Q 429.961 23.906 430.489 24.082 L 425.567 46.523 Q 424.278 45.996 422.403 45.615 Q 420.528 45.234 418.36 45.234 Q 415.723 45.234 413.409 46.084 Q 411.094 46.934 409.19 48.838 Q 407.286 50.742 405.791 53.994 Q 404.297 57.246 403.243 61.992 L 397.032 91.172 Z M 220.606 91.172 L 197.93 91.172 L 217.207 0 L 239.883 0 L 220.606 91.172 Z M 333.516 52.266 L 335.215 52.266 Q 340.313 52.266 343.301 50.918 Q 346.289 49.57 347.578 47.52 Q 348.868 45.469 348.868 43.418 Q 348.868 41.543 347.696 40.254 Q 346.524 38.965 343.946 38.965 Q 341.309 38.965 339.082 41.016 Q 336.856 43.066 335.391 46.143 Q 333.926 49.219 333.516 52.266 Z"
+                                    fill="currentColor" />
                             </svg>
                             <svg
                                 className="relative -mt-[4.9rem] -ml-8 w-[448px] max-w-none lg:-mt-[6.6rem] lg:ml-0 dark:hidden"
@@ -780,10 +655,29 @@ export default function Welcome() {
                                     />
                                 </g>
                             </svg>
-                            <div className="absolute inset-0 rounded-t-lg shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] lg:rounded-t-none lg:rounded-r-lg dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d]" />
-                        </div>
+                            <div className="absolute inset-0 rounded-lg shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] lg:rounded-lg dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d]" />
+                        </div>  
                     </main>
-                </div>
+                    <div>
+                        {auth.user ? (
+                            <Link
+                                href={route('dashboard')}
+                                className="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
+                            >
+                                Dashboard
+                            </Link>
+                        ) : (
+                            <>
+                                <Link
+                                    href={route('login')}
+                                    className="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
+                                >
+                                    Log in
+                                </Link>
+                            </>
+                        )}
+                    </div>                    
+                </div>               
                 <div className="hidden h-14.5 lg:block"></div>
             </div>
         </>
