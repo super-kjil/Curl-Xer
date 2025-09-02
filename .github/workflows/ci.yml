@@ -1,4 +1,4 @@
-name: Tests
+name: CI
 
 on:
   push:
@@ -7,16 +7,25 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  tests:
+  test:
     runs-on: ubuntu-latest
     
     strategy:
-      fail-fast: false
       matrix:
         php-version: ['8.2', '8.3']
-        dependency-version: ['prefer-lowest', 'prefer-stable']
+        database: [sqlite, mysql]
         
-    name: PHP ${{ matrix.php-version }} - ${{ matrix.dependency-version }}
+    name: PHP ${{ matrix.php-version }} - ${{ matrix.database }}
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: curlxer_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
     - name: Checkout code
@@ -26,7 +35,7 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: ${{ matrix.php-version }}
-        extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick
+        extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, mysql, pdo_mysql
         coverage: xdebug
 
     - name: Get composer cache directory
@@ -41,47 +50,60 @@ jobs:
         restore-keys: ${{ runner.os }}-composer-
 
     - name: Install dependencies
-      run: |
-        composer install --no-progress --prefer-dist --optimize-autoloader --no-interaction
-        if [ "${{ matrix.dependency-version }}" = "prefer-lowest" ]; then composer update --prefer-lowest --prefer-stable --no-interaction; fi
+      run: composer install --no-progress --prefer-dist --optimize-autoloader --no-interaction
 
-    - name: Copy environment file
-      run: cp .env.example .env
+    - name: Copy .env
+      run: php -r "file_exists('.env') || copy('.env.example', '.env');"
 
-    - name: Generate application key
+    - name: Generate key
       run: php artisan key:generate
 
-    - name: Create SQLite database
-      run: touch database/database.sqlite
+    - name: Directory Permissions
+      run: chmod -R 777 storage bootstrap/cache
 
-    - name: Run database migrations
+    - name: Setup SQLite Database
+      if: matrix.database == 'sqlite'
+      run: |
+        mkdir -p database
+        touch database/database.sqlite
+
+    - name: Setup MySQL Database
+      if: matrix.database == 'mysql'
+      run: |
+        mysql -h 127.0.0.1 -u root -ppassword -e "CREATE DATABASE IF NOT EXISTS curlxer_test;"
+
+    - name: Run migrations
       run: php artisan migrate --force
-
-    - name: Run database seeders
-      run: php artisan db:seed --force
-
-    - name: Create storage directories
-      run: |
-        mkdir -p storage/app/public
-        mkdir -p storage/framework/cache
-        mkdir -p storage/framework/sessions
-        mkdir -p storage/framework/views
-        mkdir -p storage/logs
-
-    - name: Set permissions
-      run: |
-        chmod -R 775 storage
-        chmod -R 775 bootstrap/cache
-
-    - name: Run Pest tests
-      run: php artisan test --coverage --min=80
       env:
-        DB_CONNECTION: sqlite
-        DB_DATABASE: database/database.sqlite
-        APP_ENV: testing
+        DB_CONNECTION: ${{ matrix.database }}
+        DB_DATABASE: ${{ matrix.database == 'sqlite' && 'database/database.sqlite' || 'curlxer_test' }}
+        DB_HOST: 127.0.0.1
+        DB_PORT: 3306
+        DB_USERNAME: root
+        DB_PASSWORD: password
+
+    - name: Run seeders
+      run: php artisan db:seed --force
+      env:
+        DB_CONNECTION: ${{ matrix.database }}
+        DB_DATABASE: ${{ matrix.database == 'sqlite' && 'database/database.sqlite' || 'curlxer_test' }}
+        DB_HOST: 127.0.0.1
+        DB_PORT: 3306
+        DB_USERNAME: root
+        DB_PASSWORD: password
+
+    - name: Execute tests
+      run: php artisan test --coverage
+      env:
+        DB_CONNECTION: ${{ matrix.database }}
+        DB_DATABASE: ${{ matrix.database == 'sqlite' && 'database/database.sqlite' || 'curlxer_test' }}
+        DB_HOST: 127.0.0.1
+        DB_PORT: 3306
+        DB_USERNAME: root
+        DB_PASSWORD: password
 
     - name: Upload coverage to Codecov
-      if: matrix.dependency-version == 'prefer-stable' && matrix.php-version == '8.3'
+      if: matrix.database == 'sqlite' && matrix.php-version == '8.3'
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
