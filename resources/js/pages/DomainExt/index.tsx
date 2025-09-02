@@ -22,7 +22,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Index() {
   const [extractedContent, setExtractedContent] = useState<ExtractedContent | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [copiedDomains, setCopiedDomains] = useState(false);
+  // const [copiedItems, setcopiedItems] = useState(false);
+  const [copiedItems, setCopiedItems] = useState<Set<string>>(new Set());
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -79,22 +80,142 @@ export default function Index() {
     return cleanDomains;
   };
 
-  const copyToClipboard = async (text: string, setCopiedState: React.Dispatch<React.SetStateAction<boolean>>) => {
+  const copyToClipboard = async (text: string, itemId: string) => {
     try {
-      await navigator.clipboard.writeText(text);
-      setCopiedState(true);
-      toast.success("Content has been copied successfully");
-      setTimeout(() => setCopiedState(false), 2000);
-    } catch {
-      toast.error("Could not copy to clipboard");
+      // Try modern clipboard API first
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        setCopiedItems((prev) => new Set(prev).add(itemId));
+        toast.success('Copied to clipboard!');
+      } else {
+        // Fallback for older browsers or non-secure contexts
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+          const successful = document.execCommand('copy');
+          if (successful) {
+            setCopiedItems((prev) => new Set(prev).add(itemId));
+            toast.success('Copied to clipboard!');
+          } else {
+            throw new Error('Copy command failed');
+          }
+        } catch (err) {
+          // If both methods fail, show the text in a modal or alert
+          showTextModal(text);
+          return;
+        } finally {
+          document.body.removeChild(textArea);
+        }
+      }
+
+      // Remove the copied state after 3 seconds
+      setTimeout(() => {
+        setCopiedItems((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(itemId);
+          return newSet;
+        });
+      }, 3000);
+    } catch (error) {
+      console.error('Copy failed:', error);
+      // Show text in modal as last resort
+      showTextModal(text);
     }
+  };
+
+  const showTextModal = (text: string) => {
+    // Create a modal to display the text for manual copying
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    `;
+    
+    const content = document.createElement('div');
+    content.style.cssText = `
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 80%;
+      max-height: 80%;
+      overflow: auto;
+      position: relative;
+    `;
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = 'Close';
+    closeBtn.style.cssText = `
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    `;
+    
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.cssText = `
+      width: 100%;
+      height: 300px;
+      margin-top: 30px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+    `;
+    
+    const instructions = document.createElement('p');
+    instructions.textContent = 'Select all text (Ctrl+A) and copy (Ctrl+C) manually:';
+    instructions.style.cssText = `
+      margin: 10px 0;
+      font-weight: bold;
+      color: #333;
+    `;
+    
+    closeBtn.onclick = () => {
+      document.body.removeChild(modal);
+    };
+    
+    content.appendChild(closeBtn);
+    content.appendChild(instructions);
+    content.appendChild(textArea);
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+    
+    // Auto-select the text
+    textArea.focus();
+    textArea.select();
+    
+    toast.info('Please copy the text manually from the popup');
   };
 
   const copyDomains = () => {
     if (extractedContent?.domains) {
-      copyToClipboard(extractedContent.domains.join('\n'), setCopiedDomains);
+      copyToClipboard(extractedContent.domains.join('\n'), 'domains');
     }
   };
+
+
 
 
   return (
@@ -175,7 +296,7 @@ export default function Index() {
                   size="sm"
                   className="flex items-center gap-2"
                 >
-                  {copiedDomains ? (
+                  {copiedItems.has('domains') ? (
                     <>
                       <CheckCircle className="h-4 w-4 text-green-600" />
                       Copied!
