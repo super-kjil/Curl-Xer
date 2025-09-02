@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { AlertTriangle, BadgeCheckIcon, CheckCircle, Trash, XCircle, ChevronDown, ChevronUp, History, ClipboardList, RefreshCw, Search, X } from 'lucide-react';
+import { AlertTriangle, BadgeCheckIcon, CheckCircle, Trash, XCircle, ChevronDown, ChevronUp, History, ClipboardList, RefreshCw, Search, X ,Inbox } from 'lucide-react';
 import { useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import { useHistoryCache } from '@/hooks/use-history-cache';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -352,7 +352,7 @@ export default function DomainCheckerHistory() {
                                 </>
                             ) : (
                                 <>
-                                    <i className="fas fa-history mb-4 text-4xl"></i>
+                                    <Inbox className="mx-auto mb-4 h-12 w-12 text-gray-400 " />
                                     <p>No history found. Start checking URLs to see results here.</p>
                                 </>
                             )}
