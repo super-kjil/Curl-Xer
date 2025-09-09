@@ -34,6 +34,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('DomainExt/index');
     })->name('domain-extractor')->middleware('permission:view_domain_extractor');
     
+    // Domain List Routes
+    Route::get('domain-list', function () {
+        return Inertia::render('DomainList/index');
+    })->name('domain-list')->middleware('permission:view_domain_list');
+
     // Domain Checker Routes
     Route::prefix('domain-checker')->name('domain-checker.')->middleware('permission:view_domain_checker')->group(function () {
         Route::get('/', [App\Http\Controllers\DomainCheckerController::class, 'index'])->name('index');

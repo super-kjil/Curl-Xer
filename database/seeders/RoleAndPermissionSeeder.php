@@ -30,6 +30,7 @@ class RoleAndPermissionSeeder extends Seeder
             // Domain tool permissions
             'view_domain_extractor',
             'view_domain_generator',
+            'view_domain_list',
             'view_domain_checker',
             'view_domain_history',
             'view_dns_settings',
@@ -82,6 +83,7 @@ class RoleAndPermissionSeeder extends Seeder
         $userRole->syncPermissions([
             'view_dashboard',
             'view_domain_generator',
+            'view_domain_list',
             'view_domain_checker',
             'view_domain_history',
         ]);

@@ -8,7 +8,8 @@ import {
     History, 
     Settings, 
     Shield,
-    FileText
+    FileText,
+    List
 } from 'lucide-react';
 import AppLogo from './app-logo';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -43,6 +44,12 @@ const mainNavItems: NavItem[] = [
         href: '/domain-generator',
         icon: Search,
         permission: 'view_domain_generator',
+    },
+    {
+        title: 'Domain List',
+        href: '/domain-list',
+        icon: List,
+        permission: 'view_domain_list',
     },
     {
         title: 'Domain Checker',
