@@ -1,12 +1,12 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import mammoth from 'mammoth';
-import { Upload, FileText, Copy, CheckCircle, BadgeCheckIcon } from 'lucide-react';
+import { Upload, FileText, Copy, CheckCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import AppLayout from '@/layouts/app-layout';
+import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Head } from '@inertiajs/react';
 import { BreadcrumbItem } from '@/types';
 import { Badge } from '@/components/ui/badge';
@@ -14,10 +14,18 @@ import { Badge } from '@/components/ui/badge';
 interface ExtractedContent {
   text: string;
   domains: string[];
-  ips: string[];
+  ipv4Addresses: string[];
+  fileName: string;
 }
-const STORAGE_KEY = 'extracted_domains_v1';
-const STORAGE_TTL_MS = 2 * 60 * 1000; // 2 minutes
+
+interface StoredData {
+  content: ExtractedContent;
+  timestamp: number;
+}
+
+const STORAGE_KEY = 'docx_extractor_data';
+const STORAGE_DURATION = 2 * 60 * 1000; // 2 minutes in milliseconds
+
 const breadcrumbs: BreadcrumbItem[] = [
   {
     title: 'Domain Extractor',
@@ -28,107 +36,42 @@ export default function Index() {
   const [extractedContent, setExtractedContent] = useState<ExtractedContent | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [copiedDomains, setCopiedDomains] = useState(false);
-  const [copiedIps, setCopiedIps] = useState(false);
-  const [copiedAll, setCopiedAll] = useState(false);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const clearTimerRef = useRef<number | null>(null);
-  const [showClipboardModal, setShowClipboardModal] = useState(false);
-  const [clipboardModalText, setClipboardModalText] = useState('');
-  const clipboardTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [copiedIpv4, setCopiedIpv4] = useState(false);
 
-  const stripExtension = (name: string) => name.replace(/\.[^/.]+$/, '');
-
-  const saveExtractedToStorage = (domains: string[], ips: string[], filename: string | null = null) => {
-    try {
-      const payload = JSON.stringify({ domains, ips, savedAt: Date.now(), fileName: filename });
-      localStorage.setItem(STORAGE_KEY, payload);
-
-      // clear any existing timer
-      if (clearTimerRef.current) {
-        window.clearTimeout(clearTimerRef.current);
-      }
-      // schedule clearing after TTL
-      clearTimerRef.current = window.setTimeout(() => {
-        localStorage.removeItem(STORAGE_KEY);
-        setExtractedContent(null);
-        setFileName(null);
-        clearTimerRef.current = null;
-      }, STORAGE_TTL_MS);
-    } catch (e) {
-      console.error('Failed to save domains to storage', e);
-    }
-  };
-
-  const clearStoredDomains = () => {
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-      if (clearTimerRef.current) {
-        window.clearTimeout(clearTimerRef.current);
-        clearTimerRef.current = null;
-      }
-      setFileName(null);
-    } catch (e) {
-      console.error('Failed to clear storage', e);
-    }
-  };
-
-  useEffect(() => {
-    // load stored domains on mount if not expired
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-  const parsed = JSON.parse(raw) as { domains?: string[]; ips?: string[]; savedAt: number; fileName?: string | null } | null;
-      if (!parsed) return;
-      const age = Date.now() - (parsed.savedAt || 0);
-      if (age >= STORAGE_TTL_MS) {
-        // expired
-        localStorage.removeItem(STORAGE_KEY);
-        return;
-      }
-
-  // restore domains and ips (text/images not stored)
-  setExtractedContent({ text: '', domains: parsed.domains || [], ips: parsed.ips || [] });
-      setFileName(parsed.fileName || null);
-
-      // schedule remaining clear
-      const remaining = STORAGE_TTL_MS - age;
-      clearTimerRef.current = window.setTimeout(() => {
-        localStorage.removeItem(STORAGE_KEY);
-        setExtractedContent(null);
-        setFileName(null);
-        clearTimerRef.current = null;
-      }, remaining);
-    } catch (e) {
-      console.error('Failed to load stored domains', e);
-    }
-
-    return () => {
-      if (clearTimerRef.current) {
-        window.clearTimeout(clearTimerRef.current);
-      }
+  const saveToLocalStorage = (content: ExtractedContent) => {
+    const data: StoredData = {
+      content,
+      timestamp: Date.now()
     };
-  }, []);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  };
 
-  // Auto-select text in modal when opened
-  useEffect(() => {
-    if (showClipboardModal) {
-      // wait a tick for textarea to render
-      setTimeout(() => {
-        if (clipboardTextareaRef.current) {
-          clipboardTextareaRef.current.focus();
-          clipboardTextareaRef.current.select();
-        }
-      }, 50);
+  const loadFromLocalStorage = () => {
+    const storedData = localStorage.getItem(STORAGE_KEY);
+    if (!storedData) return null;
+
+    const data: StoredData = JSON.parse(storedData);
+    const now = Date.now();
+
+    if (now - data.timestamp > STORAGE_DURATION) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
     }
-  }, [showClipboardModal]);
+
+    return data.content;
+  };
+
+  // Load stored data on component mount
+  React.useEffect(() => {
+    const storedContent = loadFromLocalStorage();
+    if (storedContent) {
+      setExtractedContent(storedContent);
+    }
+  }, []);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (!file) return;
-
-  // store file name for UI display (without extension)
-  const baseName = stripExtension(file.name);
-  setFileName(baseName);
 
     if (!file.name.endsWith('.docx')) {
       toast.error("Please upload a .docx file");
@@ -143,18 +86,20 @@ export default function Index() {
       if (result.value) {
         const text = result.value;
         const domains = extractDomains(text);
-        const ips = extractIPs(text);
+        const ipv4Addresses = extractIpv4Addresses(text);
+        const fileName = file.name;
 
-        setExtractedContent({
+        const content = {
           text,
           domains,
-          ips
-        });
+          ipv4Addresses,
+          fileName
+        };
 
-    // persist domains and ips and filename (without extension) to localStorage with TTL
-    saveExtractedToStorage(domains, ips, baseName);
+        setExtractedContent(content);
+        saveToLocalStorage(content);
 
-        toast.success(`Extracted ${domains.length} domain names and ${ips.length} IPs`);
+        toast.success(`Extracted ${domains.length} domain names and ${ipv4Addresses.length} IPv4 addresses`);
       }
     } catch (error) {
       console.error('Error processing file:', error);
@@ -162,7 +107,7 @@ export default function Index() {
     } finally {
       setIsProcessing(false);
     }
-  }, []);
+  }, [toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -186,68 +131,24 @@ export default function Index() {
     return cleanDomains;
   };
 
-  const extractIPs = (text: string): string[] => {
-    // IPv4 regex
-    const ipRegex = /(?:(?:25[0-5]|2[0-4]\d|1?\d{1,2})\.){3}(?:25[0-5]|2[0-4]\d|1?\d{1,2})/g;
-    const matches = text.match(ipRegex) || [];
+  const extractIpv4Addresses = (text: string): string[] => {
+    // Regex to match IPv4 addresses
+    const ipv4Regex = /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g;
+    const matches = text.match(ipv4Regex) || [];
 
-    const cleanIps = matches
-      .map(ip => ip.trim())
-      .filter((ip, index, arr) => arr.indexOf(ip) === index)
-      .sort((a, b) => {
-        const aParts = a.split('.').map(n => parseInt(n, 10));
-        const bParts = b.split('.').map(n => parseInt(n, 10));
-        for (let i = 0; i < 4; i++) {
-          if (aParts[i] !== bParts[i]) return aParts[i] - bParts[i];
-        }
-        return 0;
-      });
-
-    return cleanIps;
+    // Remove duplicates and sort
+    return [...new Set(matches)].sort();
   };
 
   const copyToClipboard = async (text: string, setCopiedState: React.Dispatch<React.SetStateAction<boolean>>) => {
-    // Try modern clipboard API first
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(text);
-        setCopiedState(true);
-        toast.success('Content has been copied successfully');
-        setTimeout(() => setCopiedState(false), 2000);
-        return true;
-      }
-    } catch (e) {
-      console.warn('navigator.clipboard.writeText failed', e);
+      await navigator.clipboard.writeText(text);
+      setCopiedState(true);
+      toast.success("Content has been copied successfully");
+      setTimeout(() => setCopiedState(false), 2000);
+    } catch (error) {
+      toast.error("Could not copy to clipboard");
     }
-
-    // Fallback: legacy execCommand copy
-    try {
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-99999px';
-      textArea.style.top = '0';
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      const successful = document.execCommand('copy');
-      document.body.removeChild(textArea);
-
-      if (successful) {
-        setCopiedState(true);
-        toast.success('Content has been copied successfully');
-        setTimeout(() => setCopiedState(false), 2000);
-        return true;
-      }
-    } catch (e) {
-      console.warn('execCommand copy failed', e);
-    }
-
-    // Last resort: open modal with selectable textarea so user can copy manually
-    setClipboardModalText(text);
-    setShowClipboardModal(true);
-    toast.error('Automatic copy failed — opening manual copy dialog');
-    return false;
   };
 
   const copyDomains = () => {
@@ -256,27 +157,11 @@ export default function Index() {
     }
   };
 
-  const copyIps = () => {
-    if (extractedContent?.ips) {
-      copyToClipboard(extractedContent.ips.join('\n'), setCopiedIps);
+  const copyIpv4 = () => {
+    if (extractedContent?.ipv4Addresses) {
+      copyToClipboard(extractedContent.ipv4Addresses.join('\n'), setCopiedIpv4);
     }
   };
-
-  const copyAll = () => {
-    if (!extractedContent) return;
-    const parts: string[] = [];
-    if (extractedContent.domains && extractedContent.domains.length) {
-      parts.push(...extractedContent.domains);
-    }
-    if (extractedContent.ips && extractedContent.ips.length) {
-      // separate groups visually
-      if (parts.length > 0) parts.push('');
-      parts.push(...extractedContent.ips);
-    }
-    if (parts.length === 0) return;
-    copyToClipboard(parts.join('\n'), setCopiedAll);
-  };
-
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
@@ -284,11 +169,11 @@ export default function Index() {
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
             MS Word Document Extractor
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Upload a .docx file to extract domain names and IPv4 addresses
+          <p className="text-muted-foreground">
+            Upload a .docx file to extract domain names and text content
           </p>
         </div>
 
@@ -303,21 +188,22 @@ export default function Index() {
           <CardContent>
             <div
               {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${isDragActive
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900'
-                  : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900'
+              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all duration-200 ${isDragActive
+                  ? 'border-primary bg-primary/5'
+                  : 'border-muted hover:border-muted-foreground hover:bg-muted/50'
                 }`}
             >
               <input {...getInputProps()} />
-              <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-400 mb-4" />
+              <Upload className={`mx-auto h-12 w-12 mb-4 transition-colors duration-200 ${isDragActive ? 'text-primary' : 'text-muted-foreground'
+                }`} />
               {isDragActive ? (
-                <p className="text-blue-600 font-medium">Drop the file here...</p>
+                <p className="text-primary font-medium">Drop the file here...</p>
               ) : (
                 <div>
-                  <p className="text-gray-600 dark:text-gray-400 mb-2">
+                  <p className="text-muted-foreground mb-2">
                     Drag and drop a .docx file here, or click to select
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-muted-foreground/80">
                     Supports Microsoft Word (.docx) files only
                   </p>
                 </div>
@@ -331,8 +217,8 @@ export default function Index() {
           <Card className="mb-6">
             <CardContent className="p-6">
               <div className="flex items-center justify-center gap-3">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                <span className="text-gray-600">Processing document...</span>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                <span className="text-muted-foreground">Processing document...</span>
               </div>
             </CardContent>
           </Card>
@@ -340,22 +226,32 @@ export default function Index() {
 
         {/* Results */}
         {extractedContent && (
-          <div className="space-y-6">
-            {/* IPv4 Addresses */}
-            {extractedContent.ips && extractedContent.ips.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
+          <div className={`grid grid-cols-1 ${extractedContent.ipv4Addresses.length > 0 ? 'md:grid-cols-2' : 'md:grid-cols-1 max-w-4xl mx-auto'} gap-6`}>
+            {/* Domain Names */}
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle className="flex flex-col gap-1">
+                  <div className="text-sm font-normal text-muted-foreground">
+                    File Name : 
+                    <Badge variant="secondary">
+                      {extractedContent.fileName.replace('.docx', '')}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <FileText className="h-5 w-5" />
-                      Extracted IPv4 Addresses
-                      <Badge variant="outline">{extractedContent.ips.length}</Badge>
-                      {fileName && (
-                        <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">{fileName}</span>
-                      )}
+                      Extracted Domain Names
+                      <Badge>
+                        {extractedContent.domains.length}
+                      </Badge>
                     </span>
-                    <Button onClick={copyIps} variant="outline" size="sm" className="flex items-center gap-2">
-                      {copiedIps ? (
+                    <Button
+                      onClick={copyDomains}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      {copiedDomains ? (
                         <>
                           <CheckCircle className="h-4 w-4 text-green-600" />
                           Copied!
@@ -363,117 +259,84 @@ export default function Index() {
                       ) : (
                         <>
                           <Copy className="h-4 w-4" />
-                          Copy IPs
+                          Copy All
                         </>
                       )}
                     </Button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="border-2 border-dashed rounded-lg p-4 max-h-72 overflow-y-auto">
-                    {extractedContent.ips.map((ip, idx) => (
-                      <div key={idx} className="text-sm font-mono text-gray-800 dark:text-gray-200 py-1">{ip}</div>
-                    ))}
                   </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Domain Names */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Extracted Domain Names
-                    <Badge
-                      variant="outline">
-                      {extractedContent.domains.length}
-                    </Badge>
-                    {fileName && (
-                      <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">{fileName}</span>
-                    )}
-                  </span>
-                  <Button
-                    onClick={copyAll}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
-                    {copiedAll ? (
-                      <>
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        Copied!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-4 w-4" />
-                        Copy All
-                      </>
-                    )}
-                  </Button>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {extractedContent.domains.length > 0 ? (
-                  <div className="border-2 border-dashed rounded-lg p-4 max-h-96 overflow-y-auto">
+                  <div className="bg-muted/30 rounded-lg p-4 max-h-[calc(100vh-24rem)] overflow-y-auto">
                     {extractedContent.domains.map((domain, index) => (
-                      <div key={index} className="text-sm font-mono text-gray-800 dark:text-gray-200 py-1">
+                      <div key={index} className="text-sm font-mono text-foreground py-1">
                         {domain}
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-8">
+                  <p className="text-muted-foreground text-center py-8">
                     No domain names found in the document
                   </p>
                 )}
               </CardContent>
             </Card>
 
-            
-
+            {/* IPv4 Addresses - Only render if IPv4 addresses exist */}
+            {extractedContent.ipv4Addresses.length > 0 && (
+              <Card className="h-full">
+                <CardHeader>
+                  <CardTitle className="flex flex-col gap-1">
+                    <div className="text-sm font-normal text-muted-foreground">
+                      File Name : 
+                      <Badge variant="secondary">
+                        {extractedContent.fileName.replace('.docx', '')}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        IPv4 Addresses
+                        <Badge>
+                          {extractedContent.ipv4Addresses.length}
+                        </Badge>
+                      </span>
+                      <Button
+                        onClick={copyIpv4}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        {copiedIpv4 ? (
+                          <>
+                            <CheckCircle className="h-4 w-4 text-success" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-4 w-4" />
+                            Copy All
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-muted/30 rounded-lg p-4 max-h-[calc(100vh-24rem)] overflow-y-auto">
+                    {extractedContent.ipv4Addresses.map((ip, index) => (
+                      <div key={index} className="text-sm font-mono text-foreground py-1">
+                        {ip}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
       </div>
-          {/* Manual copy modal fallback when automatic copy fails */}
-          <Dialog open={showClipboardModal} onOpenChange={setShowClipboardModal}>
-            <DialogContent className="sm:max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Manual Copy</DialogTitle>
-                <DialogDescription>
-                  Automatic copy to clipboard failed. You can manually copy the extracted domains and IPs below. Use the "Copy to clipboard" button to retry.
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="py-2">
-                <textarea
-                  ref={clipboardTextareaRef}
-                  readOnly
-                  value={clipboardModalText}
-                  className="w-full h-48 p-2 font-mono bg-white dark:bg-gray-900 border rounded"
-                />
-              </div>
-
-              <DialogFooter>
-                <Button variant="outline" onClick={() => {
-                  setShowClipboardModal(false);
-                  setClipboardModalText('');
-                }}>
-                  Close
-                </Button>
-                <Button onClick={async () => {
-                  const ok = await copyToClipboard(clipboardModalText, setCopiedDomains);
-                  if (ok) {
-                    setShowClipboardModal(false);
-                    setClipboardModalText('');
-                  }
-                }}>
-                  Copy to clipboard
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
     </AppLayout>
   );
 }
