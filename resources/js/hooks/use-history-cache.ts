@@ -454,6 +454,104 @@ export const useHistoryCache = () => {
         cacheExpiry: CACHE_EXPIRY,
     }), [isCacheValid, lastFetched]);
 
+    // Delete individual domain result
+    const deleteDomainResult = useCallback(async (batchId: string, domainName: string) => {
+        try {
+            const response = await axios.post('/domain-history/history/delete-result', {
+                batchId,
+                domainName,
+            });
+            
+            if (response.data.success) {
+                // Update local state
+                setHistory(prev => {
+                    return prev.map(item => {
+                        const updatedBatches = item.batches.map(batch => {
+                            if (batch.id === batchId) {
+                                // Remove the result
+                                const updatedResults = batch.results.filter(r => r.url !== domainName);
+                                // Update counts and rates
+                                const accessibleCount = updatedResults.filter(r => r.accessible).length;
+                                return {
+                                    ...batch,
+                                    results: updatedResults,
+                                    urlCount: updatedResults.length,
+                                    successRate: updatedResults.length > 0 
+                                        ? Math.round((accessibleCount / updatedResults.length) * 100)
+                                        : 0
+                                };
+                            }
+                            return batch;
+                        }).filter(batch => batch.results.length > 0); // Remove empty batches
+
+                        if (updatedBatches.length === 0) {
+                            return null; // This will remove the entire group if all batches are empty
+                        }
+
+                        // Recalculate group stats
+                        const totalUrls = updatedBatches.reduce((sum, b) => sum + b.urlCount, 0);
+                        const totalAccessible = updatedBatches.reduce((sum, b) => 
+                            sum + b.results.filter(r => r.accessible).length, 0);
+                        
+                        return {
+                            ...item,
+                            batches: updatedBatches,
+                            totalUrls,
+                            avgSuccessRate: totalUrls > 0 
+                                ? Math.round((totalAccessible / totalUrls) * 100)
+                                : 0
+                        };
+                    }).filter(Boolean) as GroupedHistoryItem[]; // Remove null items
+                });
+
+                toast.success('Domain result deleted successfully');
+                return true;
+            } else {
+                toast.error(response.data.message || 'Failed to delete domain result');
+                return false;
+            }
+        } catch (error: unknown) {
+            console.error('Failed to delete domain result:', error);
+            toast.error('Failed to delete domain result');
+            return false;
+        }
+    }, []);
+
+    // Update history item (group)
+    const updateHistoryItem = useCallback(async (command: string, newCommand: string) => {
+        try {
+            const response = await axios.post('/domain-history/history/update', {
+                oldCommand: command,
+                newCommand: newCommand,
+            });
+            
+            if (response.data.success) {
+                setHistory(prev => prev.map(item => 
+                    item.command === command 
+                        ? { ...item, command: newCommand }
+                        : item
+                ));
+                // Update cache
+                const updatedHistory = history.map(item => 
+                    item.command === command 
+                        ? { ...item, command: newCommand }
+                        : item
+                );
+                await saveToCache(updatedHistory);
+                toast.success('History item updated successfully');
+                return true;
+            } else {
+                const errorMessage = response.data.message || 'Failed to update history item';
+                toast.error(errorMessage);
+                return false;
+            }
+        } catch (error: unknown) {
+            console.error('Failed to update history item:', error);
+            toast.error('Failed to update history item');
+            return false;
+        }
+    }, [history, saveToCache]);
+
     return {
         // Data
         history,
@@ -466,6 +564,8 @@ export const useHistoryCache = () => {
         deleteHistoryItem,
         clearAllHistory,
         refreshHistory,
+        updateHistoryItem,
+        deleteDomainResult,
         
         // Stats
         stats,

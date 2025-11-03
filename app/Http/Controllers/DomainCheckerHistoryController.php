@@ -14,6 +14,133 @@ use Inertia\Inertia;
 
 class DomainCheckerHistoryController extends Controller
 {
+    /**
+     * Update a history item's command
+     */
+    /**
+     * Delete a specific domain result from a batch
+     */
+    public function deleteResult(Request $request)
+    {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Authentication required'], 401);
+        }
+
+        // Check if user has admin role
+        $user = Auth::user();
+        $hasAdminRole = DB::table('model_has_roles')
+            ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+            ->where('model_has_roles.model_id', $user->id)
+            ->where('model_has_roles.model_type', 'App\\Models\\User')
+            ->where('roles.name', 'admin')
+            ->exists();
+            
+        if (!$hasAdminRole) {
+            return response()->json(['success' => false, 'message' => 'Admin privileges required'], 403);
+        }
+
+        $request->validate([
+            'batchId' => 'required|string',
+            'domainName' => 'required|string',
+        ]);
+
+        try {
+            // Delete the specific result
+            $deleted = DB::table('domain_check_results')
+                ->where('batch_id', $request->batchId)
+                ->where('domain_name', $request->domainName)
+                ->delete();
+
+            if ($deleted === 0) {
+                return response()->json(['success' => false, 'message' => 'Domain result not found'], 404);
+            }
+
+            // Check if batch is now empty and delete it if it is
+            $remainingResults = DB::table('domain_check_results')
+                ->where('batch_id', $request->batchId)
+                ->count();
+
+            if ($remainingResults === 0) {
+                DB::table('domain_check_batches')
+                    ->where('id', $request->batchId)
+                    ->delete();
+            }
+
+            // Increment cache version to invalidate caches
+            Cache::increment('history:user:' . Auth::id() . ':v');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Domain result deleted successfully',
+                'batchEmpty' => $remainingResults === 0
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete domain result: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'batch_id' => $request->batchId,
+                'domain_name' => $request->domainName,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['success' => false, 'message' => 'Database error occurred while deleting'], 500);
+        }
+    }
+
+    public function updateHistoryItem(Request $request)
+    {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Authentication required'], 401);
+        }
+
+        // Check if user has admin role
+        $user = Auth::user();
+        $hasAdminRole = DB::table('model_has_roles')
+            ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+            ->where('model_has_roles.model_id', $user->id)
+            ->where('model_has_roles.model_type', 'App\\Models\\User')
+            ->where('roles.name', 'admin')
+            ->exists();
+            
+        if (!$hasAdminRole) {
+            return response()->json(['success' => false, 'message' => 'Admin privileges required'], 403);
+        }
+
+        $request->validate([
+            'oldCommand' => 'required|string',
+            'newCommand' => 'required|string|max:255'
+        ]);
+
+        try {
+            // Update all batches with the old command
+            $updated = DB::table('domain_check_batches')
+                ->where('note', $request->oldCommand)
+                ->update(['note' => $request->newCommand]);
+
+            if ($updated === 0) {
+                return response()->json(['success' => false, 'message' => 'No matching history items found'], 404);
+            }
+
+            // Increment cache version to invalidate caches
+            Cache::increment('history:user:' . Auth::id() . ':v');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'History item updated successfully',
+                'updated' => $updated
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to update history item: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'old_command' => $request->oldCommand,
+                'new_command' => $request->newCommand,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['success' => false, 'message' => 'Database error occurred while updating'], 500);
+        }
+    }
     public function index()
     {
         return Inertia::render('DomainHistory/History');

@@ -24,6 +24,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/history/details', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getHistoryDetails'])->name('history-details');
         Route::get('/history/grouped', [App\Http\Controllers\DomainCheckerHistoryController::class, 'getGroupedHistory'])->name('history-grouped');
         Route::post('/history/delete-batches', [App\Http\Controllers\DomainCheckerHistoryController::class, 'deleteHistoryBatches'])->name('delete-history-batches');
+        Route::post('/history/update', [App\Http\Controllers\DomainCheckerHistoryController::class, 'updateHistoryItem'])->name('update-history-item');
+        Route::post('/history/delete-result', [App\Http\Controllers\DomainCheckerHistoryController::class, 'deleteResult'])->name('delete-result');
 
         // Legacy-like endpoint to mirror domain-checker/history.php behavior
         Route::post('/history/legacy', [App\Http\Controllers\DomainCheckerHistoryController::class, 'legacyHistory'])->name('history-legacy');

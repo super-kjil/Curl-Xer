@@ -57,7 +57,9 @@ export default function DomainCheckerHistory() {
         loading, 
         deleteHistoryItem, 
         clearAllHistory, 
-        refreshHistory
+        refreshHistory,
+        updateHistoryItem,
+        deleteDomainResult
     } = useHistoryCache();
     
     const { hasRole } = usePermissions();
@@ -69,7 +71,14 @@ export default function DomainCheckerHistory() {
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [showClearDialog, setShowClearDialog] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [showEditDialog, setShowEditDialog] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+    const [itemToEdit, setItemToEdit] = useState<GroupedHistoryItem | null>(null);
+    const [editedCommand, setEditedCommand] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+    const [showDeleteResultDialog, setShowDeleteResultDialog] = useState(false);
+    const [resultToDelete, setResultToDelete] = useState<{ batchId: string; url: string } | null>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     // Highlight search terms in text
@@ -359,7 +368,9 @@ export default function DomainCheckerHistory() {
                         </div>
                     ) : (
                         <div className="space-y-3">
-                            {filteredHistory.map((item) => (
+                            {filteredHistory
+                                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                                .map((item) => (
                                 <div key={item.command} className="overflow-hidden">
                                     <Card className="p-3">
                                         <div className="flex items-center justify-between">
@@ -367,7 +378,7 @@ export default function DomainCheckerHistory() {
                                                 <div className="flex items-center space-x-4">
                                                     <div className="flex items-center space-x-2">
                                                         {item.command && (
-                                                            <Badge variant="secondary" className="text-sm text-black bg-blue-200">
+                                                            <Badge variant="outline" className="text-sm text-black bg-blue-200">
                                                                 <BadgeCheckIcon className="text-blue-700 mr-1 " />
                                                                 <span 
                                                                     dangerouslySetInnerHTML={{ 
@@ -403,13 +414,26 @@ export default function DomainCheckerHistory() {
                                                 </Button>
 
                                                 {isAdmin && (
-                                                    <Button
-                                                        variant="outline"
-                                                        onClick={() => openDeleteDialog(item.command)}
-                                                        title="Delete"
-                                                    >
-                                                        Delete
-                                                    </Button>
+                                                    <>
+                                                        <Button
+                                                            variant="outline"
+                                                            onClick={() => {
+                                                                setItemToEdit(item);
+                                                                setEditedCommand(item.command);
+                                                                setShowEditDialog(true);
+                                                            }}
+                                                            title="Edit"
+                                                        >
+                                                            Edit
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            onClick={() => openDeleteDialog(item.command)}
+                                                            title="Delete"
+                                                        >
+                                                            Delete
+                                                        </Button>
+                                                    </>
                                                 )}
 
                                                 <Button
@@ -488,11 +512,25 @@ export default function DomainCheckerHistory() {
                                                                             )}
                                                                         </div>
                                                                     </div>
-                                                                    <div className="flex ml-4 flex-shrink-0">
+                                                                    <div className="flex ml-4 flex-shrink-0 items-center space-x-2">
                                                                         {result.accessible ? (
                                                                             <CheckCircle className="h-5 w-5 text-green-600" />
                                                                         ) : (
                                                                             <XCircle className="h-5 w-5 text-red-600" />
+                                                                        )}
+                                                                        {isAdmin && (
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                className="text-red-500 hover:text-red-700"
+                                                                                onClick={() => {
+                                                                                    setResultToDelete({ batchId: batch.id, url: result.url });
+                                                                                    setShowDeleteResultDialog(true);
+                                                                                }}
+                                                                                title="Delete result"
+                                                                            >
+                                                                                <Trash className="h-4 w-4" />
+                                                                            </Button>
                                                                         )}
                                                                     </div>
                                                                 </div>
@@ -570,6 +608,108 @@ export default function DomainCheckerHistory() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Edit History Item Dialog */}
+            <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Edit History Item</DialogTitle>
+                        <DialogDescription>
+                            Edit the command name for this history item.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="command">Command</Label>
+                            <Input
+                                id="command"
+                                value={editedCommand}
+                                onChange={(e) => setEditedCommand(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={async () => {
+                            if (itemToEdit && editedCommand) {
+                                const success = await updateHistoryItem(itemToEdit.command, editedCommand);
+                                if (success) {
+                                    setShowEditDialog(false);
+                                    setItemToEdit(null);
+                                }
+                            }
+                        }}>
+                            Save Changes
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Result Confirmation Dialog */}
+            <Dialog open={showDeleteResultDialog} onOpenChange={setShowDeleteResultDialog}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-red-500" />
+                            Delete Domain Result
+                        </DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete this domain result? This action cannot be undone.
+                            {resultToDelete && (
+                                <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded">
+                                    <code className="text-sm break-all">{resultToDelete.url}</code>
+                                </div>
+                            )}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={() => setShowDeleteResultDialog(false)}>
+                            Cancel
+                        </Button>
+                        <Button 
+                            variant="destructive" 
+                            onClick={async () => {
+                                if (resultToDelete) {
+                                    await deleteDomainResult(resultToDelete.batchId, resultToDelete.url);
+                                    setShowDeleteResultDialog(false);
+                                    setResultToDelete(null);
+                                }
+                            }}
+                        >
+                            Delete
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Pagination Controls */}
+            {filteredHistory.length > itemsPerPage && (
+                <div className="m-4 flex justify-center ">
+                    <div className="flex justify-between">
+                        <Button
+                            variant="outline"
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="mr-2"
+                        >
+                            Previous
+                        </Button>
+                        <span className="mx-4 flex items-center">
+                            Page {currentPage} of {Math.ceil(filteredHistory.length / itemsPerPage)}
+                        </span>
+                        <Button
+                            variant="outline"
+                            onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredHistory.length / itemsPerPage), p + 1))}
+                            disabled={currentPage >= Math.ceil(filteredHistory.length / itemsPerPage)}
+                            className="ml-2"
+                        >
+                            Next
+                        </Button>
+                    </div>
+                </div>
+            )}
         </AppLayout>
     );
 }

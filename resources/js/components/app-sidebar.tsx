@@ -8,8 +8,7 @@ import {
     History, 
     Settings, 
     Shield,
-    FileText,
-    List
+    FileText
 } from 'lucide-react';
 import AppLogo from './app-logo';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -37,19 +36,12 @@ const mainNavItems: NavItem[] = [
         title: 'Domain Extractor',
         href: '/domain-extractor',
         icon: FileText,
-        permission: 'view_domain_extractor',
     },
     {
         title: 'Domain Generator',
         href: '/domain-generator',
         icon: Search,
         permission: 'view_domain_generator',
-    },
-    {
-        title: 'Domain List',
-        href: '/domain-list',
-        icon: List,
-        permission: 'view_domain_list',
     },
     {
         title: 'Domain Checker',
@@ -69,6 +61,7 @@ const mainNavItems: NavItem[] = [
         icon: Settings,
         permission: 'view_dns_settings',
     },
+    
 ];
 
 const footerNavItems: NavItem[] = [
@@ -121,7 +114,7 @@ export function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent className="pt-4">
+            <SidebarContent>
                 <NavMain items={filteredMainNavItems} />
             </SidebarContent>
 
