@@ -4,6 +4,7 @@ import mammoth from 'mammoth';
 import { Upload, FileText, Copy, CheckCircle, BadgeCheckIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
@@ -15,7 +16,7 @@ interface ExtractedContent {
   domains: string[];
 }
 const STORAGE_KEY = 'extracted_domains_v1';
-const STORAGE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const STORAGE_TTL_MS = 2 * 60 * 1000; // 2 minutes
 const breadcrumbs: BreadcrumbItem[] = [
   {
     title: 'Domain Extractor',
@@ -28,6 +29,9 @@ export default function Index() {
   const [copiedDomains, setCopiedDomains] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const clearTimerRef = useRef<number | null>(null);
+  const [showClipboardModal, setShowClipboardModal] = useState(false);
+  const [clipboardModalText, setClipboardModalText] = useState('');
+  const clipboardTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const stripExtension = (name: string) => name.replace(/\.[^/.]+$/, '');
 
@@ -102,6 +106,19 @@ export default function Index() {
     };
   }, []);
 
+  // Auto-select text in modal when opened
+  useEffect(() => {
+    if (showClipboardModal) {
+      // wait a tick for textarea to render
+      setTimeout(() => {
+        if (clipboardTextareaRef.current) {
+          clipboardTextareaRef.current.focus();
+          clipboardTextareaRef.current.select();
+        }
+      }, 50);
+    }
+  }, [showClipboardModal]);
+
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (!file) return;
@@ -165,14 +182,47 @@ export default function Index() {
   };
 
   const copyToClipboard = async (text: string, setCopiedState: React.Dispatch<React.SetStateAction<boolean>>) => {
+    // Try modern clipboard API first
     try {
-      await navigator.clipboard.writeText(text);
-      setCopiedState(true);
-      toast.success("Content has been copied successfully");
-      setTimeout(() => setCopiedState(false), 2000);
-    } catch {
-      toast.error("Could not copy to clipboard");
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        setCopiedState(true);
+        toast.success('Content has been copied successfully');
+        setTimeout(() => setCopiedState(false), 2000);
+        return true;
+      }
+    } catch (e) {
+      console.warn('navigator.clipboard.writeText failed', e);
     }
+
+    // Fallback: legacy execCommand copy
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-99999px';
+      textArea.style.top = '0';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+
+      if (successful) {
+        setCopiedState(true);
+        toast.success('Content has been copied successfully');
+        setTimeout(() => setCopiedState(false), 2000);
+        return true;
+      }
+    } catch (e) {
+      console.warn('execCommand copy failed', e);
+    }
+
+    // Last resort: open modal with selectable textarea so user can copy manually
+    setClipboardModalText(text);
+    setShowClipboardModal(true);
+    toast.error('Automatic copy failed — opening manual copy dialog');
+    return false;
   };
 
   const copyDomains = () => {
@@ -300,6 +350,44 @@ export default function Index() {
           </div>
         )}
       </div>
+          {/* Manual copy modal fallback when automatic copy fails */}
+          <Dialog open={showClipboardModal} onOpenChange={setShowClipboardModal}>
+            <DialogContent className="sm:max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Manual Copy</DialogTitle>
+                <DialogDescription>
+                  Automatic copy to clipboard failed. You can manually copy the extracted domains below. Use the "Copy to clipboard" button to retry.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="py-2">
+                <textarea
+                  ref={clipboardTextareaRef}
+                  readOnly
+                  value={clipboardModalText}
+                  className="w-full h-48 p-2 font-mono bg-white dark:bg-gray-900 border rounded"
+                />
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => {
+                  setShowClipboardModal(false);
+                  setClipboardModalText('');
+                }}>
+                  Close
+                </Button>
+                <Button onClick={async () => {
+                  const ok = await copyToClipboard(clipboardModalText, setCopiedDomains);
+                  if (ok) {
+                    setShowClipboardModal(false);
+                    setClipboardModalText('');
+                  }
+                }}>
+                  Copy to clipboard
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
     </AppLayout>
   );
 }
