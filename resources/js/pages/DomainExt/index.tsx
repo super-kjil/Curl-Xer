@@ -233,7 +233,7 @@ export default function Index() {
                 <CardTitle className="flex flex-col gap-1">
                   <div className="text-sm font-normal text-muted-foreground">
                     File Name : 
-                    <Badge variant="secondary">
+                    <Badge variant="outline">
                       {extractedContent.fileName.replace('.docx', '')}
                     </Badge>
                   </div>
@@ -290,7 +290,7 @@ export default function Index() {
                   <CardTitle className="flex flex-col gap-1">
                     <div className="text-sm font-normal text-muted-foreground">
                       File Name : 
-                      <Badge variant="secondary">
+                      <Badge variant="outline">
                         {extractedContent.fileName.replace('.docx', '')}
                       </Badge>
                     </div>
