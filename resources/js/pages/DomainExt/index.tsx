@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 interface ExtractedContent {
   text: string;
   domains: string[];
+  ips: string[];
 }
 const STORAGE_KEY = 'extracted_domains_v1';
 const STORAGE_TTL_MS = 2 * 60 * 1000; // 2 minutes
@@ -27,6 +28,8 @@ export default function Index() {
   const [extractedContent, setExtractedContent] = useState<ExtractedContent | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [copiedDomains, setCopiedDomains] = useState(false);
+  const [copiedIps, setCopiedIps] = useState(false);
+  const [copiedAll, setCopiedAll] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const clearTimerRef = useRef<number | null>(null);
   const [showClipboardModal, setShowClipboardModal] = useState(false);
@@ -35,9 +38,9 @@ export default function Index() {
 
   const stripExtension = (name: string) => name.replace(/\.[^/.]+$/, '');
 
-  const saveDomainsToStorage = (domains: string[], filename: string | null = null) => {
+  const saveExtractedToStorage = (domains: string[], ips: string[], filename: string | null = null) => {
     try {
-      const payload = JSON.stringify({ domains, savedAt: Date.now(), fileName: filename });
+      const payload = JSON.stringify({ domains, ips, savedAt: Date.now(), fileName: filename });
       localStorage.setItem(STORAGE_KEY, payload);
 
       // clear any existing timer
@@ -74,7 +77,7 @@ export default function Index() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
-      const parsed = JSON.parse(raw) as { domains: string[]; savedAt: number; fileName?: string | null } | null;
+  const parsed = JSON.parse(raw) as { domains?: string[]; ips?: string[]; savedAt: number; fileName?: string | null } | null;
       if (!parsed) return;
       const age = Date.now() - (parsed.savedAt || 0);
       if (age >= STORAGE_TTL_MS) {
@@ -83,8 +86,8 @@ export default function Index() {
         return;
       }
 
-      // restore domains (text/images not stored)
-      setExtractedContent({ text: '', domains: parsed.domains });
+  // restore domains and ips (text/images not stored)
+  setExtractedContent({ text: '', domains: parsed.domains || [], ips: parsed.ips || [] });
       setFileName(parsed.fileName || null);
 
       // schedule remaining clear
@@ -140,16 +143,18 @@ export default function Index() {
       if (result.value) {
         const text = result.value;
         const domains = extractDomains(text);
+        const ips = extractIPs(text);
 
         setExtractedContent({
           text,
-          domains
+          domains,
+          ips
         });
 
-    // persist domains and filename (without extension) to localStorage with TTL
-    saveDomainsToStorage(domains, baseName);
+    // persist domains and ips and filename (without extension) to localStorage with TTL
+    saveExtractedToStorage(domains, ips, baseName);
 
-        toast.success(`Extracted ${domains.length} domain names`);
+        toast.success(`Extracted ${domains.length} domain names and ${ips.length} IPs`);
       }
     } catch (error) {
       console.error('Error processing file:', error);
@@ -179,6 +184,26 @@ export default function Index() {
       .sort();
 
     return cleanDomains;
+  };
+
+  const extractIPs = (text: string): string[] => {
+    // IPv4 regex
+    const ipRegex = /(?:(?:25[0-5]|2[0-4]\d|1?\d{1,2})\.){3}(?:25[0-5]|2[0-4]\d|1?\d{1,2})/g;
+    const matches = text.match(ipRegex) || [];
+
+    const cleanIps = matches
+      .map(ip => ip.trim())
+      .filter((ip, index, arr) => arr.indexOf(ip) === index)
+      .sort((a, b) => {
+        const aParts = a.split('.').map(n => parseInt(n, 10));
+        const bParts = b.split('.').map(n => parseInt(n, 10));
+        for (let i = 0; i < 4; i++) {
+          if (aParts[i] !== bParts[i]) return aParts[i] - bParts[i];
+        }
+        return 0;
+      });
+
+    return cleanIps;
   };
 
   const copyToClipboard = async (text: string, setCopiedState: React.Dispatch<React.SetStateAction<boolean>>) => {
@@ -229,6 +254,27 @@ export default function Index() {
     if (extractedContent?.domains) {
       copyToClipboard(extractedContent.domains.join('\n'), setCopiedDomains);
     }
+  };
+
+  const copyIps = () => {
+    if (extractedContent?.ips) {
+      copyToClipboard(extractedContent.ips.join('\n'), setCopiedIps);
+    }
+  };
+
+  const copyAll = () => {
+    if (!extractedContent) return;
+    const parts: string[] = [];
+    if (extractedContent.domains && extractedContent.domains.length) {
+      parts.push(...extractedContent.domains);
+    }
+    if (extractedContent.ips && extractedContent.ips.length) {
+      // separate groups visually
+      if (parts.length > 0) parts.push('');
+      parts.push(...extractedContent.ips);
+    }
+    if (parts.length === 0) return;
+    copyToClipboard(parts.join('\n'), setCopiedAll);
   };
 
 
@@ -295,6 +341,44 @@ export default function Index() {
         {/* Results */}
         {extractedContent && (
           <div className="space-y-6">
+            {/* IPv4 Addresses */}
+            {extractedContent.ips && extractedContent.ips.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Extracted IPv4 Addresses
+                      <Badge variant="outline">{extractedContent.ips.length}</Badge>
+                      {fileName && (
+                        <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">{fileName}</span>
+                      )}
+                    </span>
+                    <Button onClick={copyIps} variant="outline" size="sm" className="flex items-center gap-2">
+                      {copiedIps ? (
+                        <>
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4" />
+                          Copy IPs
+                        </>
+                      )}
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="border-2 border-dashed rounded-lg p-4 max-h-72 overflow-y-auto">
+                    {extractedContent.ips.map((ip, idx) => (
+                      <div key={idx} className="text-sm font-mono text-gray-800 dark:text-gray-200 py-1">{ip}</div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Domain Names */}
             <Card>
               <CardHeader>
@@ -311,12 +395,12 @@ export default function Index() {
                     )}
                   </span>
                   <Button
-                    onClick={copyDomains}
+                    onClick={copyAll}
                     variant="outline"
                     size="sm"
                     className="flex items-center gap-2"
                   >
-                    {copiedDomains ? (
+                    {copiedAll ? (
                       <>
                         <CheckCircle className="h-4 w-4 text-green-600" />
                         Copied!
@@ -347,6 +431,8 @@ export default function Index() {
               </CardContent>
             </Card>
 
+            
+
           </div>
         )}
       </div>
@@ -356,7 +442,7 @@ export default function Index() {
               <DialogHeader>
                 <DialogTitle>Manual Copy</DialogTitle>
                 <DialogDescription>
-                  Automatic copy to clipboard failed. You can manually copy the extracted domains below. Use the "Copy to clipboard" button to retry.
+                  Automatic copy to clipboard failed. You can manually copy the extracted domains and IPs below. Use the "Copy to clipboard" button to retry.
                 </DialogDescription>
               </DialogHeader>
 
