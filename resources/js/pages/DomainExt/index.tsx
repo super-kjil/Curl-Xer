@@ -24,7 +24,7 @@ interface StoredData {
 }
 
 const STORAGE_KEY = 'docx_extractor_data';
-const STORAGE_DURATION = 2 * 60 * 1000; // 2 minutes in milliseconds
+const STORAGE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
@@ -141,13 +141,44 @@ export default function Index() {
   };
 
   const copyToClipboard = async (text: string, setCopiedState: React.Dispatch<React.SetStateAction<boolean>>) => {
-    try {
-      await navigator.clipboard.writeText(text);
+    let success = false;
+
+    // Modern Clipboard API (requires HTTPS or localhost)
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        success = true;
+      } catch (error) {
+        console.error('Clipboard API error:', error);
+      }
+    }
+
+    // Fallback for HTTP/non-secure contexts (legacy method)
+    if (!success) {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+
+      try {
+        success = document.execCommand('copy');
+      } catch (error) {
+        console.error('Fallback copy error:', error);
+      } finally {
+        document.body.removeChild(textArea);
+      }
+    }
+
+    if (success) {
       setCopiedState(true);
       toast.success("Content has been copied successfully");
       setTimeout(() => setCopiedState(false), 2000);
-    } catch (error) {
-      toast.error("Could not copy to clipboard");
+    } else {
+      toast.error("Could not copy to clipboard. Please select and copy manually.");
     }
   };
 
