@@ -47,7 +47,7 @@ interface StoredResult {
 }
 
 const STORAGE_KEY = 'url_generator_results';
-const SESSION_DURATION = 2 * 60 * 1000; // 2 minutes in milliseconds
+const SESSION_DURATION = 5 * 60 * 1000; // 2 minutes in milliseconds
 
 export default function UrlGeneratorIndex() {
     const [urls, setUrls] = useState('');
@@ -441,7 +441,6 @@ export default function UrlGeneratorIndex() {
                                                 value={date}
                                                 onChange={(e) => setDate(e.target.value)}
                                                 className="rounded-r-none"
-                                                readOnly
                                             />
                                             <Button type="button" onClick={setTodayDate} className="rounded-l-none" variant="outline">
                                                 Today
