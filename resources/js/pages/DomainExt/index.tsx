@@ -118,14 +118,51 @@ export default function Index() {
   });
 
   const extractDomains = (text: string): string[] => {
-    // Regex to match domain names
-    const domainRegex = /(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}/g;
-    const matches = text.match(domainRegex) || [];
+    // Match Unicode domains (IDN) as well as ASCII ones.
+    // Why: the previous regex used `[a-zA-Z]` only, so `vł88.com` became `88.com`.
+    const label =
+      '(?:[\\p{L}\\p{N}](?:[\\p{L}\\p{N}-]{0,61}[\\p{L}\\p{N}])?)';
+    // Note: we apply the same "label" rules to the TLD too, so punycode domains
+    // like `xn--example.com` are still matched.
+    const domainRegex = new RegExp(
+      `(?:https?:\\/\\/)?(?:www\\.)?((?:${label}\\.)+${label})`,
+      'gu',
+    );
 
-    // Clean up domains and remove duplicates
-    const cleanDomains = matches
-      .map(domain => domain.replace(/^https?:\/\//, '').replace(/^www\./, ''))
-      .filter((domain, index, arr) => arr.indexOf(domain) === index)
+    const matches = Array.from(text.matchAll(domainRegex), m => m[1] as string);
+
+    const normalizeDomain = (raw: string) => {
+      // Strip URL-ish prefixes + trailing punctuation commonly present in text runs.
+      const withoutPrefix = raw
+        .replace(/^https?:\/\//i, '')
+        .replace(/^www\./i, '');
+
+      return withoutPrefix
+        .replace(/[)\]\}>,.;:!?]+$/g, '')
+        .replace(/\.$/, '') // just in case the match includes a final dot
+        .toLowerCase();
+    };
+
+    const isValidDomain = (candidate: string) => {
+      if (!candidate) return false;
+
+      const parts = candidate.split('.');
+      if (parts.length < 2) return false;
+      if (parts.some(p => p.length === 0)) return false;
+
+      // Require a "real" TLD: at least 2 chars and must include at least one letter.
+      const tld = parts[parts.length - 1];
+      if (tld.length < 2) return false;
+      if (!/[\p{L}]/u.test(tld)) return false;
+
+      // Basic label validation (Unicode letters/digits + optional internal hyphens).
+      const labelPattern = /^[\p{L}\p{N}](?:[\p{L}\p{N}-]{0,61}[\p{L}\p{N}])?$/u;
+      return parts.every(label => labelPattern.test(label));
+    };
+
+    // Clean up domains and remove duplicates (case-insensitive)
+    const cleanDomains = Array.from(new Set(matches.map(normalizeDomain)))
+      .filter(isValidDomain)
       .sort();
 
     return cleanDomains;
