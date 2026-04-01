@@ -66,13 +66,13 @@ class DomainCheckerController extends Controller
         $timeout = max(1, $timeout);
 
         // Log the settings being used
-        \Log::info('Using user performance settings', [
-            'user_id' => Auth::id(),
-            'batch_size' => $batch_size,
-            'large_batch_size' => $large_batch_size,
-            'timeout' => $timeout,
-            'url_count' => $url_count
-        ]);
+        // \Log::info('Using user performance settings', [
+        //     'user_id' => Auth::id(),
+        //     'batch_size' => $batch_size,
+        //     'large_batch_size' => $large_batch_size,
+        //     'timeout' => $timeout,
+        //     'url_count' => $url_count
+        // ]);
 
         // Choose processing method based on URL count and user settings
         if ($url_count > 10000) {
@@ -80,11 +80,11 @@ class DomainCheckerController extends Controller
             $batch_size = $this->urlCheckerService->calculateOptimalBatchSize($url_count, $batch_size, $large_batch_size);
             $estimated_time = $this->urlCheckerService->estimateProcessingTime($url_count, $batch_size, $timeout);
             
-            \Log::info('Using optimized processing method', [
-                'url_count' => $url_count,
-                'calculated_batch_size' => $batch_size,
-                'estimated_time_seconds' => $estimated_time
-            ]);
+            // \Log::info('Using optimized processing method', [
+            //     'url_count' => $url_count,
+            //     'calculated_batch_size' => $batch_size,
+            //     'estimated_time_seconds' => $estimated_time
+            // ]);
             
             $results = $this->urlCheckerService->checkURLsOptimized(
                 $urls,
@@ -97,10 +97,10 @@ class DomainCheckerController extends Controller
             );
         } else {
             // Use standard method for smaller URL sets with user's batch size
-            \Log::info('Using standard processing method', [
-                'url_count' => $url_count,
-                'batch_size' => $batch_size
-            ]);
+            // \Log::info('Using standard processing method', [
+            //     'url_count' => $url_count,
+            //     'batch_size' => $batch_size
+            // ]);
             
             $results = $this->urlCheckerService->checkURLsParallel(
                 $urls,

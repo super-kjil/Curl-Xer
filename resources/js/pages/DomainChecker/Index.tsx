@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
@@ -10,7 +11,7 @@ import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import axios from 'axios';
-import { BarChart3, CheckCircle, Edit, Globe, Inbox, Loader2, Search, Server, XCircle } from 'lucide-react';
+import { BarChart3, CheckCircle, Edit, Globe, Inbox, Loader2, Search, Server, TriangleAlert, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -27,6 +28,7 @@ interface UrlResult {
     time: number;
     accessible: boolean;
     error?: string;
+    message?: string;
 }
 
 interface CheckResponse {
@@ -52,6 +54,35 @@ export default function DomainCheckerIndex() {
     const [progressIntervalId, setProgressIntervalId] = useState<NodeJS.Timeout | null>(null);
 
     const { dnsServers, loading: dnsLoading } = useDNSServers();
+
+    const cleanDomainInput = (value: string) => {
+        let v = value.trim();
+        v = v.replace(/^https?:\/\//i, '');
+        v = v.replace(/\/.*$/, '');
+        v = v.replace(/^\.+|\.+$/g, '');
+        return v.toLowerCase();
+    };
+
+    const isValidDomain = (value: string) => {
+        const domain = cleanDomainInput(value);
+        if (!domain) return false;
+        if (/[ \t\r\n_]/.test(domain)) return false;
+
+        // Must contain at least one dot: facebook.com valid, facebook invalid
+        const parts = domain.split('.').filter(Boolean);
+        if (parts.length < 2) return false;
+
+        if (domain.length > 253) return false;
+
+        // Unicode-friendly label validation (IDN)
+        const labelRe = /^[\p{L}\p{N}](?:[\p{L}\p{N}-]{0,61}[\p{L}\p{N}])?$/u;
+        if (!parts.every((p) => labelRe.test(p))) return false;
+
+        // TLD should be at least 2 chars
+        if (parts[parts.length - 1].length < 2) return false;
+
+        return true;
+    };
 
     useEffect(() => {
         // Check for dark mode preference
@@ -98,22 +129,34 @@ export default function DomainCheckerIndex() {
             return;
         }
 
-        setIsChecking(true);
-        setResults([]);
-        setProgress(0);
-        setCheckedUrls(0);
-
         // Calculate total URLs to check and remove duplicates
         const urlList = urls
             .trim()
             .split('\n')
             .filter((url) => url.trim());
+
+        const invalidDomains = urlList.filter((d) => !isValidDomain(d));
+        if (invalidDomains.length > 0) {
+            const preview = invalidDomains.slice(0, 5).map((d) => d.trim()).join(', ');
+            toast.error('Invalid domain(s) found', {
+                description:
+                    invalidDomains.length > 5
+                        ? `${preview} ... (+${invalidDomains.length - 5} more)`
+                        : preview,
+            });
+            return;
+        }
         
         // Remove duplicate domains (case-insensitive)
-        const uniqueUrls = [...new Set(urlList.map(url => url.toLowerCase().trim()))];
+        const uniqueUrls = [...new Set(urlList.map((url) => cleanDomainInput(url)))];
         const totalUrlsToCheck = uniqueUrls.length;
         const duplicateCount = urlList.length - totalUrlsToCheck;
         
+        setIsChecking(true);
+        setResults([]);
+        setProgress(0);
+        setCheckedUrls(0);
+
         setTotalUrls(totalUrlsToCheck);
 
         // Show info about duplicates if any were found
@@ -218,7 +261,8 @@ export default function DomainCheckerIndex() {
             .split('\n')
             .filter((url) => url.trim());
         
-        const uniqueUrls = [...new Set(urlList.map(url => url.toLowerCase().trim()))];
+        const validList = urlList.filter((d) => isValidDomain(d));
+        const uniqueUrls = [...new Set(validList.map((url) => cleanDomainInput(url)))];
         
         return {
             total: urlList.length,
@@ -289,7 +333,7 @@ export default function DomainCheckerIndex() {
                                                 id="urls"
                                                 value={urls}
                                                 onChange={(e) => setUrls(e.target.value)}
-                                                className="mt-2 h-48 resize-y max-h-80 min-h-30"
+                                                className="mt-2 h-48 resize-y max-h-150 min-h-45"
                                                 placeholder="Enter Domains here...&#10;example.com&#10;google.com&#10;github.com"
                                                 onKeyDown={(e) => {
                                                     if (e.ctrlKey && e.key === 'Enter') {
@@ -304,21 +348,15 @@ export default function DomainCheckerIndex() {
 
                                         {/* Command */}
                                         <div className="mb-6">
-                                            <Label >File name (Remark)</Label>
+                                        <FieldLabel htmlFor="input-required">
+                                            File name (Remark) <span className="text-destructive">*</span>
+                                        </FieldLabel>
                                             <Input
                                                 required
                                                 value={command}
                                                 onChange={(e) => setCommand(e.target.value)}
                                                 className="mt-2"
                                                 placeholder="Input file name or Domain name"
-                                                onKeyDown={(e) => {
-                                                    if (e.ctrlKey && e.key === 'Enter') {
-                                                        e.preventDefault();
-                                                        if (!isChecking && urls.trim()) {
-                                                            handleCheckUrls();
-                                                        }
-                                                    }
-                                                }}
                                             />
                                         </div>
 
@@ -359,6 +397,9 @@ export default function DomainCheckerIndex() {
                                             <Badge variant="outline">Total: {totalUrls}</Badge>
                                             <Badge variant="outline">
                                                 Success Rate: <span className="ml-1 font-semibold text-green-600">{successRate}%</span>
+                                            </Badge>                                           
+                                            <Badge variant="outline">
+                                                Not Existed: <span className="ml-1 font-semibold text-blue-600">{results.filter(result => result.message?.trim().toLowerCase() === 'domain not existed').length}</span>
                                             </Badge>
                                         </div>
                                         {/* )} */}
@@ -383,38 +424,68 @@ export default function DomainCheckerIndex() {
                                     )}
 
                                     {results.length > 0 ? (
-                                        <div className="max-h-96 space-y-2 overflow-y-auto">
+                                        <div className="h-96 min-h-85 max-h-190 resize-y space-y-2 overflow-auto pr-1">
                                             {results
                                                 .sort((a, b) => {
-                                                    // Sort by accessibility first (accessible domains on top)
+                                                    const aNotExist = a.message?.trim().toLowerCase() === 'domain not existed';
+                                                    const bNotExist = b.message?.trim().toLowerCase() === 'domain not existed';
+
+                                                    // Domain not existed always on top
+                                                    if (aNotExist !== bNotExist) {
+                                                        return aNotExist ? -1 : 1;
+                                                    }
+
+                                                    // Then sort by accessibility (accessible domains on top)
                                                     if (a.accessible !== b.accessible) {
                                                         return b.accessible ? 1 : -1;
                                                     }
+
                                                     // Then sort by response time (faster responses first)
                                                     return a.time - b.time;
                                                 })
                                                 .map((result, index) => (
+                                                    (() => {
+                                                        const isDomainNotExisted =
+                                                            result.message?.trim().toLowerCase() === 'domain not existed';
+
+                                                        return (
                                                     <div
                                                         key={index}
-                                                        className={`rounded-lg border p-2 ${result.accessible
-                                                                ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
-                                                                : 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20'
-                                                            }`}
+                                                        className={`rounded-lg border p-2 ${
+                                                            isDomainNotExisted
+                                                                ? 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20'
+                                                                : result.accessible
+                                                                  ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
+                                                                  : 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20'
+                                                        }`}
                                                     >
                                                         <div className="flex items-center justify-between">
                                                             <div className="min-w-0 flex-1">
                                                                 <div className="truncate text-sm font-medium">{result.url}</div>
                                                                 <div className="mt-1 flex items-center space-x-4">
-                                                                    <Badge variant="outline" className={getStatusColor(result.status)}>
-                                                                        {result.status}
-                                                                        {/* - {getStatusText(result.status)} */}
+                                                                    <Badge
+                                                                        variant="outline"
+                                                                        className={
+                                                                            result.message?.trim().toLowerCase() === 'domain not existed'
+                                                                                ? 'text-blue-500'
+                                                                                : getStatusColor(result.status)
+                                                                        }
+                                                                    >
+                                                                        {result.message}
                                                                     </Badge>
                                                                     <span className="text-xs text-muted-foreground">{result.time}ms</span>
-                                                                    {result.error && <span className="text-xs text-destructive">{result.error}</span>}
+                                                                    {/* {result.error && 
+                                                                    <span className="text-xs text-destructive">{result.error}
+                                                                    </span>} */}
                                                                 </div>
+                                                                {/* {result.message && (
+                                                                    <div className="mt-1 text-xs text-muted-foreground">{result.message}</div>
+                                                                )} */}
                                                             </div>
                                                             <div className="ml-4">
-                                                                {result.accessible ? (
+                                                                {isDomainNotExisted ? (
+                                                                    <TriangleAlert className="h-5 w-5 text-blue-600" />
+                                                                ) : result.accessible ? (
                                                                     <CheckCircle className="h-5 w-5 text-green-600" />
                                                                 ) : (
                                                                     <XCircle className="h-5 w-5 text-red-600" />
@@ -422,6 +493,8 @@ export default function DomainCheckerIndex() {
                                                             </div>
                                                         </div>
                                                     </div>
+                                                        );
+                                                    })()
                                                 ))}
                                         </div>
                                     ) : (

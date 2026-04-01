@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Cache;
 
 class UrlCheckerService
 {
+    private const NXDOMAIN_PATTERN = '/\*\*\s*server can\'t find\s+([^\s:]+):\s*NXDOMAIN/i';
+
     public function isValidDNS($dns): bool
     {
         if (!$dns) return true; // Empty DNS is valid (use default)
@@ -339,6 +341,53 @@ class UrlCheckerService
         return filter_var($url, FILTER_VALIDATE_URL) ? $url : false;
     }
 
+    public function normalizeDomain(string $domain): string|false
+    {
+        $domain = $this->cleanDomainInput($domain);
+
+        if (empty($domain)) {
+            return false;
+        }
+
+        // Reject obviously invalid hostnames early (spaces/underscores)
+        if (preg_match('/[\s_]/u', $domain)) {
+            return false;
+        }
+
+        // Prefer IDN (unicode) -> ASCII (punycode) normalization when available
+        $ascii = $domain;
+        if (function_exists('idn_to_ascii')) {
+            $converted = idn_to_ascii($domain, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
+            if ($converted !== false && is_string($converted) && $converted !== '') {
+                $ascii = $converted;
+            }
+        }
+
+        // Validate ASCII hostname (punycode is ascii-safe)
+        if (strlen($ascii) > 253) {
+            return false;
+        }
+
+        if (!preg_match('/^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?\.)+[a-z0-9\-]{2,63}$/i', $ascii)) {
+            // If we couldn't convert IDN, allow unicode domains to pass to nslookup
+            if ($ascii !== $domain) {
+                return false;
+            }
+        }
+
+        // Return ASCII form so `nslookup` works reliably across OSes
+        return $ascii;
+    }
+
+    private function cleanDomainInput(string $domain): string
+    {
+        $domain = trim($domain);
+        $domain = preg_replace('/^https?:\/\//i', '', $domain);
+        $domain = preg_replace('/\/.*$/', '', $domain);
+        $domain = trim($domain, " \t\n\r\0\x0B.");
+        return mb_strtolower($domain, 'UTF-8');
+    }
+
     /**
      * Optimized method for handling large URL sets
      */
@@ -419,95 +468,138 @@ class UrlCheckerService
             $batch_size = 100; // Default fallback
             Log::warning("Invalid batch_size provided, using default", ['provided_batch_size' => $batch_size]);
         }
-        
+
         $results = [];
-        $dns_servers = [$primary_dns, $secondary_dns];
-        $url_batches = array_chunk($urls, $batch_size);
 
-        foreach ($url_batches as $batch) {
-            $mh = curl_multi_init();
-            $handles = [];
+        foreach ($urls as $domainInput) {
+            $startedAt = microtime(true);
+            $displayDomain = $this->cleanDomainInput((string)$domainInput);
+            $domain = $this->normalizeDomain((string)$domainInput);
 
-            // Initialize cURL handles for this batch
-            foreach ($batch as $i => $url) {
-                $normalized_url = $this->normalizeURL($url);
-                if ($normalized_url === false) {
-                    $results[] = [
-                        'url' => $url,
-                        'status' => 0,
-                        'time' => 0,
-                        'accessible' => false,
-                        'error' => 'Invalid URL format'
-                    ];
-                    continue;
-                }
-
-                $ch = curl_init();
-                curl_setopt_array($ch, [
-                    CURLOPT_URL => $normalized_url,
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_FOLLOWLOCATION => true,
-                    CURLOPT_MAXREDIRS => 5,
-                    CURLOPT_TIMEOUT => $timeout,
-                    CURLOPT_CONNECTTIMEOUT => min(10, $timeout / 3),
-                    CURLOPT_SSL_VERIFYPEER => false,
-                    CURLOPT_SSL_VERIFYHOST => false,
-                    CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    CURLOPT_NOBODY => true, // Only get headers
-                ]);
-
-                // Set custom DNS if provided and disable DNS caching
-                if (!empty($primary_dns)) {
-                    curl_setopt($ch, CURLOPT_DNS_USE_GLOBAL_CACHE, false);
-                    curl_setopt($ch, CURLOPT_DNS_CACHE_TIMEOUT, 0); // Disable DNS caching completely
-                    curl_setopt($ch, CURLOPT_RESOLVE, [parse_url($normalized_url, PHP_URL_HOST) . ':80:' . $primary_dns]);
-                } else {
-                    // Even without custom DNS, disable caching to get fresh lookups
-                    curl_setopt($ch, CURLOPT_DNS_USE_GLOBAL_CACHE, false);
-                    curl_setopt($ch, CURLOPT_DNS_CACHE_TIMEOUT, 0);
-                }
-
-                $handles[$i] = $ch;
-                curl_multi_add_handle($mh, $ch);
-            }
-
-            // Execute the batch
-            $active = null;
-            do {
-                $mrc = curl_multi_exec($mh, $active);
-            } while ($mrc == CURLM_CALL_MULTI_PERFORM);
-
-            while ($active && $mrc == CURLM_OK) {
-                if (curl_multi_select($mh) != -1) {
-                    do {
-                        $mrc = curl_multi_exec($mh, $active);
-                    } while ($mrc == CURLM_CALL_MULTI_PERFORM);
-                }
-            }
-
-            // Process results
-            foreach ($handles as $i => $ch) {
-                $url = $batch[$i];
-                $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                $total_time = curl_getinfo($ch, CURLINFO_TOTAL_TIME);
-                $error = curl_error($ch);
-
+            if ($domain === false) {
                 $results[] = [
-                    'url' => $url,
-                    'status' => $http_code,
-                    'time' => round($total_time * 1000, 2), // Convert to milliseconds
-                    'accessible' => $http_code >= 200 && $http_code < 400 && empty($error),
-                    'error' => $error ?: null
+                    'url' => $displayDomain !== '' ? $displayDomain : (string)$domainInput,
+                    'status' => 0,
+                    'time' => 0,
+                    'accessible' => false,
+                    'error' => 'Invalid domain format',
+                    'message' => 'Invalid domain format'
                 ];
-
-                curl_multi_remove_handle($mh, $ch);
-                curl_close($ch);
+                continue;
             }
 
-            curl_multi_close($mh);
+            $dnsServer = !empty($primary_dns) ? trim($primary_dns) : null;
+            $lookupResult = $this->runNslookup($domain, $dnsServer);
+            $elapsedMs = round((microtime(true) - $startedAt) * 1000, 2);
+
+            $results[] = [
+                'url' => $displayDomain !== '' ? $displayDomain : $domain,
+                'status' => $lookupResult['status'],
+                'time' => $elapsedMs,
+                'accessible' => $lookupResult['accessible'],
+                'error' => $lookupResult['error'],
+                'message' => $lookupResult['message']
+            ];
         }
 
         return $results;
+    }
+
+    private function runNslookup(string $domain, ?string $dnsServer = null): array
+    {
+        $target = escapeshellarg($domain);
+        $dnsArg = $dnsServer ? ' ' . escapeshellarg($dnsServer) : '';
+        $command = "nslookup {$target}{$dnsArg} 2>&1";
+
+        $output = [];
+        $exitCode = 0;
+        exec($command, $output, $exitCode);
+        $lines = array_map('trim', $output);
+        $rawText = implode("\n", $lines);
+
+        if ($this->isNxDomainResponse($rawText, $lines)) {
+            return [
+                'status' => 404,
+                'accessible' => false,
+                'error' => 'Domain not existed',
+                'message' => 'Domain not existed'
+            ];
+        }
+
+        $resolvedName = null;
+        $resolvedAddresses = [];
+        $seenName = false;
+
+        foreach ($lines as $line) {
+            if (preg_match('/^Name:\s*(.+)$/i', $line, $nameMatch)) {
+                $resolvedName = trim($nameMatch[1]);
+                $seenName = true;
+                continue;
+            }
+
+            if (!$seenName) {
+                continue;
+            }
+
+            if (preg_match('/^Addresses?:\s*(.+)$/i', $line, $addrMatch)) {
+                $candidate = trim($addrMatch[1]);
+                if (filter_var($candidate, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+                    $resolvedAddresses[] = $candidate;
+                }
+                continue;
+            }
+
+            if (filter_var($line, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+                $resolvedAddresses[] = $line;
+            }
+        }
+
+        $resolvedAddresses = array_values(array_unique($resolvedAddresses));
+        $ip = $resolvedAddresses[0] ?? null;
+
+        if ($ip === '0.0.0.0') {
+            return [
+                'status' => 403,
+                'accessible' => false,
+                'error' => null,
+                'message' => 'Blocked'
+            ];
+        }
+
+        if ($ip && $resolvedName) {
+            return [
+                'status' => 200,
+                'accessible' => true,
+                'error' => null,
+                'message' => "Address: {$ip} & Name: {$resolvedName} = Not Blocked"
+            ];
+        }
+
+        return [
+            'status' => 0,
+            'accessible' => false,
+            'error' => 'DNS lookup failed',
+            'message' => 'DNS lookup failed'
+        ];
+    }
+
+    private function isNxDomainResponse(string $rawText, array $lines): bool
+    {
+        if (preg_match('/NXDOMAIN/i', $rawText)) {
+            return true;
+        }
+
+        if (preg_match('/Non-existent domain/i', $rawText)) {
+            return true;
+        }
+
+        foreach ($lines as $line) {
+            if (preg_match('/can\'t find/i', $line) && preg_match('/NXDOMAIN/i', $line)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
