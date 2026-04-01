@@ -8,6 +8,7 @@ interface ChartData {
     url_count: number;
     success_urls: number;
     failed_urls: number;
+    not_existed_urls: number;
     checks: number;
 }
 
@@ -15,6 +16,7 @@ interface DashboardStats {
     total_checks: number;
     avg_success_rate: number;
     total_urls: number;
+    total_not_existed: number;
 }
 
 interface CachedDashboard {
@@ -37,6 +39,7 @@ export const useDashboardCache = () => {
         total_checks: 0,
         avg_success_rate: 0,
         total_urls: 0,
+        total_not_existed: 0,
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -138,6 +141,7 @@ export const useDashboardCache = () => {
                     total_checks: response.data.total_checks,
                     avg_success_rate: response.data.avg_success_rate,
                     total_urls: response.data.total_urls,
+                    total_not_existed: response.data.total_not_existed ?? 0,
                 };
 
                 setChartData(newChartData);

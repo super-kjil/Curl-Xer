@@ -14,9 +14,11 @@ import {
     Globe,
     CheckCircle,
     Activity,
-    RefreshCw
+    RefreshCw,
+    TriangleAlert,
 } from 'lucide-react';
 import { useDashboardCache } from '@/hooks/use-dashboard-cache';
+import { Badge } from '@/components/ui/badge';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -150,11 +152,11 @@ export default function Dashboard() {
                 )}
 
                 {/* Stats Cards */}
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-4">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-md font-medium">Total Checks</CardTitle>
-                            <Activity className="h-6 w-6 text-muted-foreground" />
+                            <Activity className="h-6 w-6 text-yellow-500 " />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{stats.total_checks}</div>
@@ -167,7 +169,7 @@ export default function Dashboard() {
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-md font-medium">Success Rate</CardTitle>
-                            <TrendingUp className="h-6 w-6 text-muted-foreground" />
+                            <TrendingUp className="h-6 w-6 text-green-600" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{stats.avg_success_rate}%</div>
@@ -180,12 +182,25 @@ export default function Dashboard() {
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-md font-medium">Total Domains</CardTitle>
-                            <Globe className="h-6 w-6 text-muted-foreground" />
+                            <Globe className="h-6 w-6" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{stats.total_urls}</div>
                             <p className="text-sm text-muted-foreground">
                                 Domain checked
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-md font-medium">Not Existed Domain</CardTitle>
+                            <TriangleAlert className="h-6 w-6 text-blue-600" /><Badge variant="outline" className='bg-blue-500 text-white'>New</Badge>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stats.total_not_existed}</div>
+                            <p className="text-sm text-muted-foreground">
+                                Domains returned NXDOMAIN
                             </p>
                         </CardContent>
                     </Card>
@@ -216,7 +231,7 @@ export default function Dashboard() {
                 </Card>
 
                 {/* Charts */}
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {/* <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     <Card className="md:col-span-2 ">
                         <CardHeader>
                             <CardTitle>Success Rate Trend</CardTitle>
@@ -271,7 +286,7 @@ export default function Dashboard() {
                             )}
                         </CardContent>
                     </Card>
-                </div>
+                </div> */}
             </div>
         </AppLayout>
     );

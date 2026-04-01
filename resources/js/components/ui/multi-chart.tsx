@@ -14,6 +14,7 @@ interface ChartDataItem {
   name: string;
   success_urls: number;
   failed_urls: number;
+  not_existed_urls: number;
   success_rate: number;
   url_count: number;
   checks: number;
@@ -71,6 +72,7 @@ export function MultiChart({
         text: '#9CA3AF', // gray-400
         success: '#10B981', // green-500
         failed: '#EF4444', // red-500
+        notExisted: '#3B82F6', // blue-500
         tooltipBg: '#1F2937', // gray-800
         tooltipBorder: '#374151', // gray-700
       };
@@ -80,6 +82,7 @@ export function MultiChart({
         text: '#6B7280', // gray-500
         success: '#10B981', // green-500
         failed: '#EF4444', // red-500
+        notExisted: '#3B82F6', // blue-500
         tooltipBg: '#FFFFFF', // white
         tooltipBorder: '#E5E7EB', // gray-200
       };
@@ -148,6 +151,12 @@ export function MultiChart({
                             >
                               Failed: {payload[0]?.payload?.failed_urls || 0}
                             </span>
+                            <span
+                              className="text-sm font-medium"
+                              style={{ color: colors.notExisted }}
+                            >
+                              Not Existed: {payload[0]?.payload?.not_existed_urls || 0}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -165,7 +174,11 @@ export function MultiChart({
               }}
               formatter={(value) => (
                 <span style={{ color: colors.text, fontSize: '12px' }}>
-                  {value === 'success_urls' ? 'Success URLs' : 'Failed URLs'}
+                  {value === 'success_urls'
+                    ? 'Success URLs'
+                    : value === 'failed_urls'
+                      ? 'Failed URLs'
+                      : 'Not Existed URLs'}
                 </span>
               )}
             />
@@ -189,6 +202,16 @@ export function MultiChart({
             strokeWidth={strokeWidth}
             fillOpacity={0.6}
             name="failed_urls"
+          />
+          <Area
+            type={type}
+            dataKey="not_existed_urls"
+            stackId="1"
+            fill={colors.notExisted}
+            stroke={colors.notExisted}
+            strokeWidth={strokeWidth}
+            fillOpacity={0.6}
+            name="not_existed_urls"
           />
         </AreaChart>
       </ResponsiveContainer>

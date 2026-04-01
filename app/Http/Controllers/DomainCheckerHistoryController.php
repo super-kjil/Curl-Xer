@@ -430,7 +430,8 @@ class DomainCheckerHistoryController extends Controller
 
             $totalUrls = $results->count();
             $successfulUrls = $results->where('http_status', '>=', 200)->where('http_status', '<', 400)->count();
-            $failedUrls = $totalUrls - $successfulUrls;
+            $notExistedUrls = $results->where('http_status', 404)->count();
+            $failedUrls = max(0, $totalUrls - $successfulUrls - $notExistedUrls);
             $successRate = $totalUrls > 0 ? round(($successfulUrls / $totalUrls) * 100, 2) : 0;
 
             return [
@@ -438,6 +439,7 @@ class DomainCheckerHistoryController extends Controller
                 'url_count' => $totalUrls,
                 'success_urls' => $successfulUrls,
                 'failed_urls' => $failedUrls,
+                'not_existed_urls' => $notExistedUrls,
                 'checks' => $dayBatches->count(),
             ];
         });
@@ -450,6 +452,7 @@ class DomainCheckerHistoryController extends Controller
                 'url_count' => $item['url_count'],
                 'success_urls' => $item['success_urls'],
                 'failed_urls' => $item['failed_urls'],
+                'not_existed_urls' => $item['not_existed_urls'],
                 'checks' => $item['checks'],
             ];
         })->values();
@@ -483,6 +486,7 @@ class DomainCheckerHistoryController extends Controller
         $resultsData = $allResults->get();
         $totalUrls = $resultsData->count();
         $totalSuccessful = $resultsData->where('http_status', '>=', 200)->where('http_status', '<', 400)->count();
+        $totalNotExisted = $resultsData->where('http_status', 404)->count();
         $avgSuccessRate = $totalUrls > 0 ? round(($totalSuccessful / $totalUrls) * 100, 2) : 0;
 
         return response()->json([
@@ -491,6 +495,7 @@ class DomainCheckerHistoryController extends Controller
             'total_checks' => $totalBatches,
             'avg_success_rate' => $avgSuccessRate,
             'total_urls' => $totalUrls,
+            'total_not_existed' => $totalNotExisted,
         ]);
     }
 

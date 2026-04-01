@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { AlertTriangle, BadgeCheckIcon, CheckCircle, Trash, XCircle, ChevronDown, ChevronUp, History, ClipboardList, RefreshCw, Search, X ,Inbox } from 'lucide-react';
+import { AlertTriangle, BadgeCheckIcon, CheckCircle, Trash, XCircle, ChevronDown, ChevronUp, History, ClipboardList, RefreshCw, Search, X, Inbox } from 'lucide-react';
 import { useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import { useHistoryCache } from '@/hooks/use-history-cache';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -52,19 +52,19 @@ interface GroupedHistoryItem {
 }
 
 export default function DomainCheckerHistory() {
-    const { 
-        history, 
-        loading, 
-        deleteHistoryItem, 
-        clearAllHistory, 
+    const {
+        history,
+        loading,
+        deleteHistoryItem,
+        clearAllHistory,
         refreshHistory,
         updateHistoryItem,
         deleteDomainResult
     } = useHistoryCache();
-    
+
     const { hasRole } = usePermissions();
     const isAdmin = hasRole('admin');
-    
+
     const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
     const [expandingItems, setExpandingItems] = useState<Set<string>>(new Set());
     const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set());
@@ -84,7 +84,7 @@ export default function DomainCheckerHistory() {
     // Highlight search terms in text
     const highlightSearchTerm = useCallback((text: string, searchTerm: string) => {
         if (!searchTerm.trim()) return text;
-        
+
         const regex = new RegExp(`(${searchTerm})`, 'gi');
         return text.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-800 px-1 rounded">$1</mark>');
     }, []);
@@ -92,15 +92,15 @@ export default function DomainCheckerHistory() {
     // Filter history based on search query
     const filteredHistory = useMemo(() => {
         if (!searchQuery.trim()) return history;
-        
+
         const query = searchQuery.toLowerCase().trim();
         return history.filter(item => {
             // Search in command name
             if (item.command.toLowerCase().includes(query)) return true;
-            
+
             // Search in URLs within batches
-            return item.batches.some(batch => 
-                batch.results.some(result => 
+            return item.batches.some(batch =>
+                batch.results.some(result =>
                     result.url.toLowerCase().includes(query)
                 )
             );
@@ -110,9 +110,9 @@ export default function DomainCheckerHistory() {
     const toggleExpanded = useCallback(async (command: string) => {
         // Prevent multiple rapid clicks
         if (expandingItems.has(command)) return;
-        
+
         setExpandingItems(prev => new Set(prev).add(command));
-        
+
         const newExpanded = new Set(expandedItems);
         if (newExpanded.has(command)) {
             newExpanded.delete(command);
@@ -120,7 +120,7 @@ export default function DomainCheckerHistory() {
             newExpanded.add(command);
         }
         setExpandedItems(newExpanded);
-        
+
         // Small delay to prevent rapid toggling
         setTimeout(() => {
             setExpandingItems(prev => {
@@ -182,7 +182,7 @@ export default function DomainCheckerHistory() {
             toast.error('No results to copy');
             return;
         }
-        
+
         // Format date to DD/MM/YYYY
         const formatDate = (timestamp: string) => {
             const date = new Date(timestamp);
@@ -191,10 +191,10 @@ export default function DomainCheckerHistory() {
             const year = date.getFullYear();
             return `${day}/${month}/${year}`;
         };
-        
+
         const urls = allResults.map((result) => `${result.url}      ${formatDate(result.timestamp)}`);
         const textToCopy = urls.join('\n');
-        
+
         // Modern clipboard API with fallback
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard
@@ -224,10 +224,10 @@ export default function DomainCheckerHistory() {
             document.body.appendChild(textArea);
             textArea.focus();
             textArea.select();
-            
+
             const successful = document.execCommand('copy');
             document.body.removeChild(textArea);
-            
+
             if (successful) {
                 toast.success('URLs with timestamps copied to clipboard');
             } else {
@@ -264,7 +264,7 @@ export default function DomainCheckerHistory() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <h1 className="flex items-center text-3xl font-bold">
-                                    <History className="mr-2 font-bold "/> History Logs
+                                    <History className="mr-2 font-bold " /> History Logs
                                 </h1>
                                 <p className="mt-2 opacity-90">View checked domains results</p>
                             </div>
@@ -279,8 +279,8 @@ export default function DomainCheckerHistory() {
                             </h2>
                         </div>
                         <div className="flex items-center space-x-2">
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 onClick={refreshHistory}
                                 disabled={loading}
                                 title="Refresh history data"
@@ -293,9 +293,9 @@ export default function DomainCheckerHistory() {
                                     {history.length > 0 && (
                                         <Button
                                             variant="destructive"
-                                            onClick={openClearDialog} 
+                                            onClick={openClearDialog}
                                             title="Clear all history"
-                                            >
+                                        >
                                             <Trash className="mr-2" />
                                             Erase All History
                                         </Button>
@@ -309,28 +309,37 @@ export default function DomainCheckerHistory() {
                     <div className="mb-4">
                         <div className="grid w-full max-w-sm items-center gap-3">
                             <div className="flex items-center gap-2">
-                                <Search/>
-                                <Label>Search</Label>          
-                            </div>                                            
-                            <Input
-                                ref={searchInputRef}
-                                placeholder="Search by filename, command, or URL... (Ctrl+F)"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Escape') {
-                                        setSearchQuery('');
-                                    }
-                                }}
-                            />
-                            {searchQuery && (
+                                <Search />
+                                <Label>Search</Label>
+                            </div>
+                            <div className=" flex gap-2 items-center">
+                                <Input
+                                    className='w-lg'
+                                    ref={searchInputRef}
+                                    placeholder="Search by filename, command, or URL... (Ctrl+F)"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Escape') {
+                                            setSearchQuery('');
+                                        }
+                                    }}
+                                /> 
+                                <Button
+                                    onClick={() => setSearchQuery('')}
+                                    disabled={!searchQuery}
+                                >
+                                   Clear Search
+                                </Button>
+                            </div>
+                            {/* {searchQuery && (
                                 <Button
                                     onClick={() => setSearchQuery('')}
                                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                                 >
                                     <X className="h-4 w-4" />
                                 </Button>
-                            )}
+                            )} */}
                         </div>
                         {searchQuery && (
                             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -351,8 +360,8 @@ export default function DomainCheckerHistory() {
                                     <Search className="mx-auto mb-4 h-12 w-12 text-gray-400" />
                                     <p>No results found for "{searchQuery}"</p>
                                     <p className="text-sm mt-2">Try a different search term or clear the search</p>
-                                    <Button 
-                                        variant="outline" 
+                                    <Button
+                                        variant="outline"
                                         onClick={() => setSearchQuery('')}
                                         className="mt-4"
                                     >
@@ -371,193 +380,192 @@ export default function DomainCheckerHistory() {
                             {filteredHistory
                                 .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                                 .map((item) => (
-                                <div key={item.command} className="overflow-hidden">
-                                    <Card className="p-3">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex-1">
-                                                <div className="flex items-center space-x-4">
-                                                    <div className="flex items-center space-x-2">
-                                                        {item.command && (
-                                                            <Badge variant="outline" className="text-sm text-black bg-blue-200">
-                                                                <BadgeCheckIcon className="text-blue-700 mr-1 " />
-                                                                <span 
-                                                                    dangerouslySetInnerHTML={{ 
-                                                                        __html: highlightSearchTerm(item.command, searchQuery) 
-                                                                    }} 
-                                                                />
-                                                            </Badge>
-                                                        )}
-                                                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                                            {new Date(item.latestTimestamp).toLocaleString()}
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="mt-2 flex items-center space-x-4">
-                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                        Total Domains: <span className="font-semibold">{item.totalUrls}</span>
-                                                    </div>
-                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                        Success Rate: <span className="font-semibold text-green-600">{item.avgSuccessRate}%</span>
-                                                    </div>
-                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                        DNS:{' '}
-                                                        <span className="text-sm font-mono">{formatDNS(item.primaryDns, item.secondaryDns)}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center space-x-2">
-                                                <Button variant="outline" onClick={() => copyHistory(item)} title="Copy URLs with timestamps">
-                                                    {/* <Copy className="mr-1" /> */}
-                                                    Copy
-                                                </Button>
-
-                                                {isAdmin && (
-                                                    <>
-                                                        <Button
-                                                            variant="outline"
-                                                            onClick={() => {
-                                                                setItemToEdit(item);
-                                                                setEditedCommand(item.command);
-                                                                setShowEditDialog(true);
-                                                            }}
-                                                            title="Edit"
-                                                        >
-                                                            Edit
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            onClick={() => openDeleteDialog(item.command)}
-                                                            title="Delete"
-                                                        >
-                                                            Delete
-                                                        </Button>
-                                                    </>
-                                                )}
-
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() => toggleExpanded(item.command)}
-                                                    className="text-gray-500 hover:text-gray-700"
-                                                    title={expandedItems.has(item.command) ? "Collapse" : "Expand"}
-                                                    disabled={expandingItems.has(item.command)}
-                                                >
-                                                    {expandingItems.has(item.command) ? (
-                                                        <ChevronUp className="animate-spin" />
-                                                    ) : (
-                                                        expandedItems.has(item.command) ? <ChevronUp /> : <ChevronDown />
-                                                    )}
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </Card>
-
-                                    {/* Expanded Details */}
-                                    <div 
-                                        className={`border-gray-200 overflow-hidden transition-all duration-200 ease-out ${
-                                            expandedItems.has(item.command) 
-                                                ? 'opacity-100 translate-y-0' 
-                                                : 'opacity-0 -translate-y-2 pointer-events-none'
-                                        }`}
-                                        style={{
-                                            maxHeight: expandedItems.has(item.command) ? 'none' : '0px',
-                                            display: expandedItems.has(item.command) ? 'block' : 'none'
-                                        }}
-                                    >
-                                        <Card className="p-2 space-y-4 rounded-lg">
-                                            {item.batches.map((batch) => (
-                                                <div key={batch.id} className=" rounded-lg p-4">
-                                                    <div className="flex items-center justify-between mb-3">
-                                                        <CardTitle >
-                                                            Total Domains: {batch.urlCount}
-                                                        </CardTitle>
+                                    <div key={item.command} className="overflow-hidden">
+                                        <Card className="p-3">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center space-x-4">
                                                         <div className="flex items-center space-x-2">
-                                                            <CardDescription className={`${batch.successRate > 80 ? "text-green-600 dark:text-green-400" : batch.successRate > 50 ? "text-yellow-600 dark:text-yellow-400" : "text-red-600 dark:text-red-400"}`}>
-                                                                {batch.successRate}% accessible
-                                                            </CardDescription>
-                                                            <CardDescription className="text-xs ">
-                                                                {new Date(batch.timestamp).toLocaleString()}
-                                                            </CardDescription>
+                                                            {item.command && (
+                                                                <Badge variant="outline" className="text-sm text-black bg-blue-200">
+                                                                    <BadgeCheckIcon className="text-blue-700 mr-1 " />
+                                                                    <span
+                                                                        dangerouslySetInnerHTML={{
+                                                                            __html: highlightSearchTerm(item.command, searchQuery)
+                                                                        }}
+                                                                    />
+                                                                </Badge>
+                                                            )}
+                                                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                                                {new Date(item.latestTimestamp).toLocaleString()}
+                                                            </span>
                                                         </div>
                                                     </div>
-                                                    <div className="space-y-2">
-                                                        {(batch.results || [])
-                                                            .sort((a, b) => {
-                                                                // Sort by accessibility first (accessible domains on top)
-                                                                if (a.accessible !== b.accessible) {
-                                                                    return b.accessible ? 1 : -1;
-                                                                }
-                                                                // Then sort by response time (faster responses first)
-                                                                return a.time - b.time;
-                                                            })
-                                                            .slice(0, expandedResults.has(batch.id) ? undefined : 10)
-                                                            .map((result, resultIndex) => (
-                                                                <div key={resultIndex} className="flex items-start justify-between">
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <p 
-                                                                            className="text-sm font-medium truncate"
-                                                                            dangerouslySetInnerHTML={{ 
-                                                                                __html: highlightSearchTerm(result.url, searchQuery) 
-                                                                            }} 
-                                                                        />
-                                                                        <div className="mt-1 flex items-center text-xs">
-                                                                            <span className={`inline-flex items-center px-2 py-0.5 rounded ${getStatusColorClass(result.status)}`}>
-                                                                                {result.status}
-                                                                            </span>
-                                                                            <span className="ml-2">{result.time}ms</span>
-                                                                            <span className="ml-2">{new Date(result.timestamp).toLocaleTimeString()}</span>
-                                                                            {result.error && (
-                                                                                <span className="ml-2 text-red-600 dark:text-red-400">{result.error}</span>
+
+                                                    <div className="mt-2 flex items-center space-x-4">
+                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                            Total Domains: <span className="font-semibold">{item.totalUrls}</span>
+                                                        </div>
+                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                            Success Rate: <span className="font-semibold text-green-600">{item.avgSuccessRate}%</span>
+                                                        </div>
+                                                        {/* <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                            DNS:{' '}
+                                                            <span className="text-sm font-mono">{formatDNS(item.primaryDns, item.secondaryDns)}</span>
+                                                        </div> */}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center space-x-2">
+                                                    <Button variant="outline" onClick={() => copyHistory(item)} title="Copy URLs with timestamps">
+                                                        {/* <Copy className="mr-1" /> */}
+                                                        Copy
+                                                    </Button>
+
+                                                    {isAdmin && (
+                                                        <>
+                                                            <Button
+                                                                variant="outline"
+                                                                onClick={() => {
+                                                                    setItemToEdit(item);
+                                                                    setEditedCommand(item.command);
+                                                                    setShowEditDialog(true);
+                                                                }}
+                                                                title="Edit"
+                                                            >
+                                                                Edit
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                onClick={() => openDeleteDialog(item.command)}
+                                                                title="Delete"
+                                                            >
+                                                                Delete
+                                                            </Button>
+                                                        </>
+                                                    )}
+
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => toggleExpanded(item.command)}
+                                                        className="text-gray-500 hover:text-gray-700"
+                                                        title={expandedItems.has(item.command) ? "Collapse" : "Expand"}
+                                                        disabled={expandingItems.has(item.command)}
+                                                    >
+                                                        {expandingItems.has(item.command) ? (
+                                                            <ChevronUp className="animate-spin" />
+                                                        ) : (
+                                                            expandedItems.has(item.command) ? <ChevronUp /> : <ChevronDown />
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </Card>
+
+                                        {/* Expanded Details */}
+                                        <div
+                                            className={`border-gray-200 overflow-hidden transition-all duration-200 ease-out ${expandedItems.has(item.command)
+                                                    ? 'opacity-100 translate-y-0'
+                                                    : 'opacity-0 -translate-y-2 pointer-events-none'
+                                                }`}
+                                            style={{
+                                                maxHeight: expandedItems.has(item.command) ? 'none' : '0px',
+                                                display: expandedItems.has(item.command) ? 'block' : 'none'
+                                            }}
+                                        >
+                                            <Card className="p-2 space-y-2 rounded-lg">
+                                                {item.batches.map((batch) => (
+                                                    <div key={batch.id} className=" rounded-lg p-2">
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <CardTitle >
+                                                                Total Domains: {batch.urlCount}
+                                                            </CardTitle>
+                                                            <div className="flex items-center space-x-2">
+                                                                <CardDescription className={`${batch.successRate > 80 ? "text-green-600 dark:text-green-400" : batch.successRate > 50 ? "text-yellow-600 dark:text-yellow-400" : "text-red-600 dark:text-red-400"}`}>
+                                                                    {batch.successRate}% accessible
+                                                                </CardDescription>
+                                                                <CardDescription className="text-xs ">
+                                                                    {new Date(batch.timestamp).toLocaleString()}
+                                                                </CardDescription>
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            {(batch.results || [])
+                                                                .sort((a, b) => {
+                                                                    // Sort by accessibility first (accessible domains on top)
+                                                                    if (a.accessible !== b.accessible) {
+                                                                        return b.accessible ? 1 : -1;
+                                                                    }
+                                                                    // Then sort by response time (faster responses first)
+                                                                    return a.time - b.time;
+                                                                })
+                                                                .slice(0, expandedResults.has(batch.id) ? undefined : 10)
+                                                                .map((result, resultIndex) => (
+                                                                    <div key={resultIndex} className="flex items-start justify-between">
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <p
+                                                                                className="text-sm font-medium truncate"
+                                                                                dangerouslySetInnerHTML={{
+                                                                                    __html: highlightSearchTerm(result.url, searchQuery)
+                                                                                }}
+                                                                            />
+                                                                            <div className="mt-1 flex items-center text-xs">
+                                                                                <span className={`inline-flex items-center px-2 py-0.5 rounded ${getStatusColorClass(result.status)}`}>
+                                                                                    {result.status === 404 ? 'Not Existed' : result.status}
+                                                                                </span>
+                                                                                <span className="ml-2">{result.time}ms</span>
+                                                                                <span className="ml-2">{new Date(result.timestamp).toLocaleTimeString()}</span>
+                                                                                {result.error && (
+                                                                                    <span className="ml-2 text-red-600 dark:text-red-400">{result.error}</span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex ml-4 flex-shrink-0 items-center space-x-2">
+                                                                            {result.accessible ? (
+                                                                                <CheckCircle className="h-5 w-5 text-green-600" />
+                                                                            ) : (
+                                                                                <XCircle className="h-5 w-5 text-red-600" />
+                                                                            )}
+                                                                            {isAdmin && (
+                                                                                <Button
+                                                                                    variant="ghost"
+                                                                                    size="sm"
+                                                                                    className="text-red-500 hover:text-red-700"
+                                                                                    onClick={() => {
+                                                                                        setResultToDelete({ batchId: batch.id, url: result.url });
+                                                                                        setShowDeleteResultDialog(true);
+                                                                                    }}
+                                                                                    title="Delete result"
+                                                                                >
+                                                                                    <Trash className="h-4 w-4" />
+                                                                                </Button>
                                                                             )}
                                                                         </div>
                                                                     </div>
-                                                                    <div className="flex ml-4 flex-shrink-0 items-center space-x-2">
-                                                                        {result.accessible ? (
-                                                                            <CheckCircle className="h-5 w-5 text-green-600" />
-                                                                        ) : (
-                                                                            <XCircle className="h-5 w-5 text-red-600" />
-                                                                        )}
-                                                                        {isAdmin && (
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="sm"
-                                                                                className="text-red-500 hover:text-red-700"
-                                                                                onClick={() => {
-                                                                                    setResultToDelete({ batchId: batch.id, url: result.url });
-                                                                                    setShowDeleteResultDialog(true);
-                                                                                }}
-                                                                                title="Delete result"
-                                                                            >
-                                                                                <Trash className="h-4 w-4" />
-                                                                            </Button>
-                                                                        )}
-                                                                    </div>
+                                                                ))}
+
+                                                            {batch.results && batch.results.length > 10 && (
+                                                                <div className="pt-2">
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        onClick={() => toggleResultsExpanded(batch.id)}
+                                                                        className="w-full"
+                                                                    >
+                                                                        {expandedResults.has(batch.id)
+                                                                            ? `Show Less`
+                                                                            : `Show More (${batch.results.length - 10} more results)`
+                                                                        }
+                                                                    </Button>
                                                                 </div>
-                                                            ))}
-                                                        
-                                                        {batch.results && batch.results.length > 10 && (
-                                                            <div className="pt-2">
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    onClick={() => toggleResultsExpanded(batch.id)}
-                                                                    className="w-full"
-                                                                >
-                                                                    {expandedResults.has(batch.id) 
-                                                                        ? `Show Less` 
-                                                                        : `Show More (${batch.results.length - 10} more results)`
-                                                                    }
-                                                                </Button>
-                                                            </div>
-                                                        )}
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
-                                        </Card>
+                                                ))}
+                                            </Card>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
                         </div>
                     )}
                 </div>
@@ -668,8 +676,8 @@ export default function DomainCheckerHistory() {
                         <Button variant="outline" onClick={() => setShowDeleteResultDialog(false)}>
                             Cancel
                         </Button>
-                        <Button 
-                            variant="destructive" 
+                        <Button
+                            variant="destructive"
                             onClick={async () => {
                                 if (resultToDelete) {
                                     await deleteDomainResult(resultToDelete.batchId, resultToDelete.url);

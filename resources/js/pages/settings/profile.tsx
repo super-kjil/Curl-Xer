@@ -98,18 +98,6 @@ export default function Profile() {
 
                         {auth.user.email_verified_at === null && (
                             <div>
-                                <p className="-mt-4 text-sm text-muted-foreground">
-                                    Your email address is unverified.{' '}
-                                    <Link
-                                        href={route('verification.send')}
-                                        method="post"
-                                        as="button"
-                                        className="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
-                                    >
-                                        Click here to resend the verification email.
-                                    </Link>
-                                </p>
-
                                 {auth.status === 'verification-link-sent' && (
                                     <div className="mt-2 text-sm font-medium text-green-600">
                                         A new verification link has been sent to your email address.

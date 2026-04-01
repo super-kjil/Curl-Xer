@@ -118,15 +118,6 @@ class DomainCheckerController extends Controller
         // Generate check ID
         $check_id = $this->urlCheckerService->generateCheckId();
 
-        // Resolve which DNS values were actually used
-        $dnsPrimaryUsed = $primary_dns;
-        $dnsSecondaryUsed = $secondary_dns;
-        if (empty($dnsPrimaryUsed)) {
-            $serverDNS = $this->urlCheckerService->getServerDNSWithCache();
-            $dnsPrimaryUsed = $serverDNS['primary'] ?? 'System Default';
-            $dnsSecondaryUsed = $serverDNS['secondary'] ?? '0.0.0.0';
-        }
-
         // Persist using domain_check_* schema (batch + results)
         $batch = DomainCheckBatch::create([
             'user_id' => Auth::id(),
@@ -135,12 +126,10 @@ class DomainCheckerController extends Controller
 
         // Prepare bulk insert for results
         $now = now();
-        $rows = array_map(function ($r) use ($batch, $now, $dnsPrimaryUsed, $dnsSecondaryUsed) {
+        $rows = array_map(function ($r) use ($batch, $now) {
             $remark = [
                 'time' => $r['time'] ?? 0,
                 'accessible' => $r['accessible'] ?? false,
-                'used_dns' => $dnsPrimaryUsed,
-                'secondary_dns' => $dnsSecondaryUsed,
             ];
             return [
                 'batch_id' => $batch->id,

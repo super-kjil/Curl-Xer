@@ -115,19 +115,6 @@ export default function DomainCheckerIndex() {
     };
 
     const handleCheckUrls = async () => {
-        if (!urls.trim()) {
-            toast.error('Domains field is required', {
-                description: 'Please enter at least one valid domain to check',
-            });
-            return;
-        }
-
-        if (!command.trim()) {
-            toast.error('File name field is required', {
-                description: 'Please enter a file name before checking URLs',
-            });
-            return;
-        }
 
         // Calculate total URLs to check and remove duplicates
         const urlList = urls
@@ -143,6 +130,9 @@ export default function DomainCheckerIndex() {
                     invalidDomains.length > 5
                         ? `${preview} ... (+${invalidDomains.length - 5} more)`
                         : preview,
+                className: 'invalid-domain-toast',
+                descriptionClassName: 'invalid-domain-toast-description',
+                duration: 5000,
             });
             return;
         }
@@ -163,7 +153,9 @@ export default function DomainCheckerIndex() {
         if (duplicateCount > 0) {
             toast.info('Duplicate domains removed', {
                 description: `Found ${duplicateCount} duplicate(s). Processing ${totalUrlsToCheck.toLocaleString()} unique domains.`,
-                duration: 3000,
+                duration: 5000,
+                className: 'info-toast',
+                descriptionClassName: 'info-toast-description',
             });
         }
 
@@ -227,6 +219,8 @@ export default function DomainCheckerIndex() {
 
                 toast.success('Domains checked successfully', {
                     description: description,
+                    className: 'success-toast',
+                    descriptionClassName: 'success-toast-description',
                 });
             }
         } catch (error: unknown) {
@@ -392,7 +386,6 @@ export default function DomainCheckerIndex() {
                                             <BarChart3 className="mr-2 h-5 w-5" />
                                             Results
                                         </CardTitle>
-                                        {/* {results.length > 0 && ( */}
                                         <div className="flex items-center space-x-4">
                                             <Badge variant="outline">Total: {totalUrls}</Badge>
                                             <Badge variant="outline">
@@ -400,9 +393,8 @@ export default function DomainCheckerIndex() {
                                             </Badge>                                           
                                             <Badge variant="outline">
                                                 Not Existed: <span className="ml-1 font-semibold text-blue-600">{results.filter(result => result.message?.trim().toLowerCase() === 'domain not existed').length}</span>
-                                            </Badge>
+                                            </Badge>             
                                         </div>
-                                        {/* )} */}
                                     </div>
                                 </CardHeader>
                                 <CardContent>
@@ -498,7 +490,7 @@ export default function DomainCheckerIndex() {
                                                 ))}
                                         </div>
                                     ) : (
-                                        <div className="rounded-lg border border-gray-200 py-12 text-center text-muted-foreground">
+                                        <div className="rounded-lg border border-gray-600/70 py-12 text-center text-muted-foreground">
                                             <Inbox className="mx-auto mb-4 h-12 w-12 opacity-50" />
                                             <p>No results yet. Enter Domains and click "Check" to get started.</p>
                                         </div>
