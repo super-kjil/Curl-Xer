@@ -344,7 +344,9 @@ export const useHistoryCache = () => {
         setError(null);
 
         try {
-            const response = await axios.get('/domain-history/history/grouped');
+            const response = await axios.get('/domain-history/history/grouped', {
+                params: { limit: 20 },
+            });
             
             if (response.data.success) {
                 const historyData = response.data.history;

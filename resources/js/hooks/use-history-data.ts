@@ -13,7 +13,9 @@ export const useHistoryData = () => {
         setError(null);
 
         try {
-            const response = await axios.get('/domain-history/history/grouped');
+            const response = await axios.get('/domain-history/history/grouped', {
+                params: { limit: 20 },
+            });
             
             if (response.data.success) {
                 setHistory(response.data.history);

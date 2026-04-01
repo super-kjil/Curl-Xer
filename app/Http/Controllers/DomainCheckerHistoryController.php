@@ -392,101 +392,79 @@ class DomainCheckerHistoryController extends Controller
 
     private function getChartDataFromNewTables(Request $request)
     {
-        $userId = Auth::id();
-        $query = DB::table('domain_check_batches as b');
-        
-        // Show all data to all users (guests, regular users, and admins)
-        // No filtering by user_id - everyone sees everything
+        $batchesQuery = DB::table('domain_check_batches as b');
+        $resultsQuery = DB::table('domain_check_results as r')
+            ->join('domain_check_batches as b', 'r.batch_id', '=', 'b.id');
 
         switch ($request->filter) {
             case '7days':
-                $query->where('b.created_at', '>=', now()->subDays(7));
+                $from = now()->subDays(7);
+                $batchesQuery->where('b.created_at', '>=', $from);
+                $resultsQuery->where('b.created_at', '>=', $from);
                 break;
             case '1month':
-                $query->where('b.created_at', '>=', now()->subMonth());
+                $from = now()->subMonth();
+                $batchesQuery->where('b.created_at', '>=', $from);
+                $resultsQuery->where('b.created_at', '>=', $from);
                 break;
             case '3months':
-                $query->where('b.created_at', '>=', now()->subMonths(3));
+                $from = now()->subMonths(3);
+                $batchesQuery->where('b.created_at', '>=', $from);
+                $resultsQuery->where('b.created_at', '>=', $from);
                 break;
             case 'custom':
                 if ($request->start_date && $request->end_date) {
-                    $query->whereBetween('b.created_at', [$request->start_date, $request->end_date]);
+                    $range = [$request->start_date, $request->end_date];
+                    $batchesQuery->whereBetween('b.created_at', $range);
+                    $resultsQuery->whereBetween('b.created_at', $range);
                 }
                 break;
         }
 
-        $batches = $query->orderBy('b.created_at', 'asc')->get();
+        // Aggregate by day directly in SQL to avoid loading large collections into PHP memory.
+        $dailyRows = (clone $resultsQuery)
+            ->selectRaw('DATE(b.created_at) as day')
+            ->selectRaw('COUNT(*) as url_count')
+            ->selectRaw('SUM(CASE WHEN r.http_status BETWEEN 200 AND 399 THEN 1 ELSE 0 END) as success_urls')
+            ->selectRaw('SUM(CASE WHEN r.http_status = 404 THEN 1 ELSE 0 END) as not_existed_urls')
+            ->groupBy('day')
+            ->orderBy('day', 'asc')
+            ->get();
 
-        // Group by date
-        $groupedData = $batches->groupBy(function ($batch) {
-            return Carbon::parse($batch->created_at)->format('Y-m-d');
-        })->map(function ($dayBatches) use ($userId) {
-            $batchIds = $dayBatches->pluck('id');
-            
-            // Get results for these batches
-            $results = DB::table('domain_check_results')
-                ->whereIn('batch_id', $batchIds)
-                ->get();
+        $dailyChecks = (clone $batchesQuery)
+            ->selectRaw('DATE(b.created_at) as day')
+            ->selectRaw('COUNT(*) as checks')
+            ->groupBy('day')
+            ->pluck('checks', 'day');
 
-            $totalUrls = $results->count();
-            $successfulUrls = $results->where('http_status', '>=', 200)->where('http_status', '<', 400)->count();
-            $notExistedUrls = $results->where('http_status', 404)->count();
-            $failedUrls = max(0, $totalUrls - $successfulUrls - $notExistedUrls);
-            $successRate = $totalUrls > 0 ? round(($successfulUrls / $totalUrls) * 100, 2) : 0;
+        $chartData = $dailyRows->map(function ($row) use ($dailyChecks) {
+            $urlCount = (int)$row->url_count;
+            $successUrls = (int)$row->success_urls;
+            $notExistedUrls = (int)$row->not_existed_urls;
+            $failedUrls = max(0, $urlCount - $successUrls - $notExistedUrls);
+            $successRate = $urlCount > 0 ? round(($successUrls / $urlCount) * 100, 2) : 0;
 
             return [
+                'name' => $row->day,
                 'success_rate' => $successRate,
-                'url_count' => $totalUrls,
-                'success_urls' => $successfulUrls,
+                'url_count' => $urlCount,
+                'success_urls' => $successUrls,
                 'failed_urls' => $failedUrls,
                 'not_existed_urls' => $notExistedUrls,
-                'checks' => $dayBatches->count(),
-            ];
-        });
-
-        // Convert to chart format
-        $chartData = $groupedData->map(function ($item, $date) {
-            return [
-                'name' => $date,
-                'success_rate' => $item['success_rate'],
-                'url_count' => $item['url_count'],
-                'success_urls' => $item['success_urls'],
-                'failed_urls' => $item['failed_urls'],
-                'not_existed_urls' => $item['not_existed_urls'],
-                'checks' => $item['checks'],
+                'checks' => (int)($dailyChecks[$row->day] ?? 0),
             ];
         })->values();
 
-        // Calculate overall stats
-        $totalBatches = $batches->count();
-        $allResults = DB::table('domain_check_results as r')
-            ->join('domain_check_batches as b', 'r.batch_id', '=', 'b.id');
-            
-        // Show all data to all users (guests, regular users, and admins)
-        // No filtering by user_id - everyone sees everything
+        $totalBatches = (clone $batchesQuery)->count();
+        $totals = (clone $resultsQuery)
+            ->selectRaw('COUNT(*) as total_urls')
+            ->selectRaw('SUM(CASE WHEN r.http_status BETWEEN 200 AND 399 THEN 1 ELSE 0 END) as total_successful')
+            ->selectRaw('SUM(CASE WHEN r.http_status = 404 THEN 1 ELSE 0 END) as total_not_existed')
+            ->first();
 
-        // Apply same date filters to results
-        switch ($request->filter) {
-            case '7days':
-                $allResults->where('b.created_at', '>=', now()->subDays(7));
-                break;
-            case '1month':
-                $allResults->where('b.created_at', '>=', now()->subMonth());
-                break;
-            case '3months':
-                $allResults->where('b.created_at', '>=', now()->subMonths(3));
-                break;
-            case 'custom':
-                if ($request->start_date && $request->end_date) {
-                    $allResults->whereBetween('b.created_at', [$request->start_date, $request->end_date]);
-                }
-                break;
-        }
-
-        $resultsData = $allResults->get();
-        $totalUrls = $resultsData->count();
-        $totalSuccessful = $resultsData->where('http_status', '>=', 200)->where('http_status', '<', 400)->count();
-        $totalNotExisted = $resultsData->where('http_status', 404)->count();
+        $totalUrls = (int)($totals->total_urls ?? 0);
+        $totalSuccessful = (int)($totals->total_successful ?? 0);
+        $totalNotExisted = (int)($totals->total_not_existed ?? 0);
         $avgSuccessRate = $totalUrls > 0 ? round(($totalSuccessful / $totalUrls) * 100, 2) : 0;
 
         return response()->json([
@@ -511,9 +489,16 @@ class DomainCheckerHistoryController extends Controller
 
         $userId = Auth::id();
 
+        $request->validate([
+            'limit' => 'nullable|integer|min:1|max:100',
+        ]);
+
+        $limit = (int)($request->input('limit', 20));
+
         $batchesQuery = DB::table('domain_check_batches as b')
             ->select('b.id as batch_id', 'b.note as command', 'b.created_at as timestamp')
-            ->orderBy('b.created_at', 'desc');
+            ->orderBy('b.created_at', 'desc')
+            ->limit($limit);
 
         // Show all data to all users (guests, regular users, and admins)
         // No filtering by user_id - everyone sees everything
@@ -525,18 +510,31 @@ class DomainCheckerHistoryController extends Controller
 
         $batchIds = $batches->pluck('batch_id')->all();
 
-        $results = DB::table('domain_check_results')
+        // Aggregate totals in SQL to avoid loading all rows into PHP memory.
+        $batchStats = DB::table('domain_check_results')
             ->whereIn('batch_id', $batchIds)
-            ->orderBy('checked_at', 'desc')
+            ->selectRaw('batch_id, COUNT(*) as total_urls')
+            ->selectRaw('SUM(CASE WHEN http_status BETWEEN 200 AND 399 THEN 1 ELSE 0 END) as accessible_count')
+            ->groupBy('batch_id')
             ->get()
-            ->groupBy('batch_id');
+            ->keyBy('batch_id');
+
+        // Keep only a small preview of results per batch for history page rendering.
+        $perBatchLimit = 100;
+        $resultsByBatch = [];
+        foreach ($batchIds as $batchId) {
+            $resultsByBatch[$batchId] = DB::table('domain_check_results')
+                ->where('batch_id', $batchId)
+                ->orderBy('checked_at', 'desc')
+                ->limit($perBatchLimit)
+                ->get();
+        }
 
         $commandGroups = [];
 
         foreach ($batches as $b) {
-            $batchResultsRaw = $results->get($b->batch_id, collect());
+            $batchResultsRaw = $resultsByBatch[$b->batch_id] ?? collect();
             $batchResults = [];
-            $accessibleCount = 0;
 
             foreach ($batchResultsRaw as $r) {
                 $remarkData = null;
@@ -549,9 +547,6 @@ class DomainCheckerHistoryController extends Controller
 
                 $status = (int)($r->http_status ?? 0);
                 $isAccessible = $status >= 200 && $status < 400;
-                if ($isAccessible || (!is_null($remarkData) && !empty($remarkData['accessible']))) {
-                    $accessibleCount++;
-                }
 
                 $batchResults[] = [
                     'url' => $r->domain_name,
@@ -564,25 +559,13 @@ class DomainCheckerHistoryController extends Controller
                 ];
             }
 
-            // Extract DNS from first result remark
+            // DNS is no longer persisted in remark payload.
             $primaryDns = 'System Default';
             $secondaryDns = '0.0.0.0';
-            if (!empty($batchResults)) {
-                $firstRemark = $batchResults[0]['remark'] ?? null;
-                if (!empty($firstRemark)) {
-                    $decoded = json_decode($firstRemark, true);
-                    if (is_array($decoded)) {
-                        if (!empty($decoded['used_dns'])) {
-                            $primaryDns = $decoded['used_dns'];
-                        }
-                        if (!empty($decoded['secondary_dns'])) {
-                            $secondaryDns = $decoded['secondary_dns'];
-                        }
-                    }
-                }
-            }
 
-            $urlCount = count($batchResults);
+            $stats = $batchStats->get($b->batch_id);
+            $urlCount = (int)($stats->total_urls ?? 0);
+            $accessibleCount = (int)($stats->accessible_count ?? 0);
             $successRate = $urlCount > 0 ? round(100 * $accessibleCount / $urlCount) : 0;
 
             $batchPayload = [
