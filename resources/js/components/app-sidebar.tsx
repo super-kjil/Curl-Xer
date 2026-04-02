@@ -25,6 +25,7 @@ import {
     SidebarMenuButton, 
     SidebarMenuItem 
 } from '@/components/ui/sidebar';
+import { Badge } from './ui/badge';
 
 const mainNavItems: NavItem[] = [
     {
@@ -50,6 +51,7 @@ const mainNavItems: NavItem[] = [
         href: '/domain-list',
         icon: Folders,
         permission: 'view_domain_list',
+        badge: <Badge variant="secondary" className="ml-auto text-xs text-green-600">New</Badge>,   // ← Added
     },
     {
         title: 'Domain Checker',
@@ -69,18 +71,16 @@ const mainNavItems: NavItem[] = [
         icon: Settings,
         permission: 'view_dns_settings',
     },
-    
 ];
 
 const footerNavItems: NavItem[] = [
     {
-    title: 'Admin Panel',
-    href: '/admin',
-    icon: Shield,
-    permission: 'manage_users',
-    role: 'admin',
-},
-
+        title: 'Admin Panel',
+        href: '/admin',
+        icon: Shield,
+        permission: 'manage_users',
+        role: 'admin',
+    },
 ];
 
 export function AppSidebar() {
@@ -97,7 +97,6 @@ export function AppSidebar() {
         return true;
     });
 
-    // Filter footer nav items based on user permissions and roles
     const filteredFooterNavItems = footerNavItems.filter(item => {
         if (item.permission && !hasPermission(item.permission)) {
             return false;

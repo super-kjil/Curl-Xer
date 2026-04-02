@@ -22,6 +22,7 @@ export interface NavItem {
     isActive?: boolean;
     permission?: string;
     role?: string;
+    badge?: React.ReactNode;
 }
 
 export interface SharedData {

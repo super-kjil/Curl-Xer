@@ -40,6 +40,7 @@ export interface NavItem {
     isExternal?: boolean;
     permission?: string;
     role?: string;
+    badge?: React.ReactNode;
 }
 
 export interface SharedData {
