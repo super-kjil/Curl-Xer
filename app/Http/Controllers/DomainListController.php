@@ -16,13 +16,13 @@ class DomainListController extends Controller
 
     public function fetchList(Request $request)
     {
-        $url = (string) config('app.domain_list');
+        $url = trim((string) config('app.domain_list', ''));
         if ($url === '') {
             return response()->json([
                 'success' => false,
-                'message' => 'DOMAIN_LIST is not existed',
+                'message' => 'DOMAIN_LIST is not configured',
             ], 500);
-        };
+        }
 
         $cacheKey = 'domain_list.' . md5($url);
         $ttlSeconds = 300; // 5 minutes
