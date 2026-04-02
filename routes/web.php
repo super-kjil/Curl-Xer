@@ -40,7 +40,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Domain List Routes
     Route::middleware('permission:view_domain_list')->group(function () {
         Route::get('domain-list', [DomainListController::class, 'index'])->name('domain-list');
-        Route::get('domain-list/domains', [DomainListController::class, 'fetchList'])->name('domain-list.domains');
     });
 
     // Domain Checker Routes

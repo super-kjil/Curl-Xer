@@ -383,7 +383,7 @@ export default function UrlGeneratorIndex() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Domains Generator" />
-            <div className="container mx-auto px-4 py-8 max-w-4xl">
+            <div className="container mx-auto px-4 py-8 max-w-5xl">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start justify-center gap-4 mb-8">
                     <div className="container mx-auto px-4">
                         <div className="flex items-center justify-center">
