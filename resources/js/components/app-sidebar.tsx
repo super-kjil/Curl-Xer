@@ -51,7 +51,7 @@ const mainNavItems: NavItem[] = [
         href: '/domain-list',
         icon: Folders,
         permission: 'view_domain_list',
-        badge: <Badge variant="secondary" className="ml-auto text-xs text-green-600">New</Badge>,   // ← Added
+        badge: <Badge variant="secondary" className=" text-green-600">New</Badge>,   // ← Added
     },
     {
         title: 'Domain Checker',

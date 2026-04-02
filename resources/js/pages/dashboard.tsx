@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Head } from '@inertiajs/react';
 import { format } from 'date-fns';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Chart } from '@/components/ui/chart';
 import { MultiChart } from '@/components/ui/multi-chart';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -16,9 +16,11 @@ import {
     Activity,
     RefreshCw,
     TriangleAlert,
+    Clock,
 } from 'lucide-react';
 import { useDashboardCache } from '@/hooks/use-dashboard-cache';
 import { Badge } from '@/components/ui/badge';
+import { usePage } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -40,9 +42,36 @@ export default function Dashboard() {
 
     } = useDashboardCache();
 
+    const { app_timezone } = usePage<SharedData>().props;
+    const [currentTime, setCurrentTime] = useState<string>('');
+
     const [filter, setFilter] = useState('7days');
     const [startDate, setStartDate] = useState<Date>();
     const [endDate, setEndDate] = useState<Date>();
+
+    React.useEffect(() => {
+        const timer = setInterval(() => {
+            const now = new Date();
+            const timeFormatted = new Intl.DateTimeFormat('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+                timeZone: app_timezone || 'Asia/Phnom_Penh',
+            }).format(now);
+            
+            const dateFormatted = new Intl.DateTimeFormat('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: '2-digit',
+                year: 'numeric',
+                timeZone: app_timezone || 'Asia/Phnom_Penh',
+            }).format(now);
+
+            setCurrentTime(`${timeFormatted} | ${dateFormatted}`);
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [app_timezone]);
 
     const handleFilterChange = (newFilter: string) => {
         setFilter(newFilter);
@@ -152,7 +181,26 @@ export default function Dashboard() {
                 )}
 
                 {/* Stats Cards */}
-                <div className="grid gap-4 md:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-5">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-md font-medium">System Time</CardTitle>
+                            <div className="flex items-center gap-2">
+                                <Clock className="h-6 w-6" />
+                                <Badge variant="secondary" className='text-green-500'>New</Badge>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-3xl font-semibold tracking-tight">{currentTime.split(' | ')[0] || '--:--'}</div>
+                            <div className="text-sm text-muted-foreground mt-1">
+                                {currentTime.split(' | ')[1] || '---, --- --, ----'}
+                            </div>
+                            <p className="text-xs text-muted-foreground/60 mt-2 flex items-center gap-1">
+                                <Globe className="h-3 w-3" />
+                                {app_timezone}
+                            </p>
+                        </CardContent>
+                    </Card>
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-md font-medium">Total Checks</CardTitle>
@@ -195,7 +243,10 @@ export default function Dashboard() {
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-md font-medium">Not Existed Domain</CardTitle>
-                            <TriangleAlert className="h-6 w-6 text-blue-600" /><Badge variant="secondary" className='text-green-500'>New</Badge>
+                            <div className="flex items-center gap-2">
+                                <TriangleAlert className="h-6 w-6 text-blue-600" />
+                                <Badge variant="secondary" className='text-green-500'>New</Badge>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{stats.total_not_existed}</div>
@@ -204,6 +255,8 @@ export default function Dashboard() {
                             </p>
                         </CardContent>
                     </Card>
+
+                    
                 </div>
                 <Card>
                     <CardHeader>

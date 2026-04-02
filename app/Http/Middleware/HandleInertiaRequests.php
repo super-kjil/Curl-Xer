@@ -61,6 +61,7 @@ class HandleInertiaRequests extends Middleware
                 'location' => $request->url(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'app_timezone' => config('app.timezone', 'Asia/Phnom_Penh'),
         ];
     }
 }

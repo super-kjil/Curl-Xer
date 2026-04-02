@@ -50,6 +50,7 @@ export interface SharedData {
         error?: string;
     };
     errors: Record<string, string[]>;
+    app_timezone?: string;
     [key: string]: any;
 }
 
@@ -60,6 +61,7 @@ export interface PageProps {
     };
     name?: string;
     sidebarOpen?: boolean;
+    app_timezone?: string;
     [key: string]: any;
 }
 
