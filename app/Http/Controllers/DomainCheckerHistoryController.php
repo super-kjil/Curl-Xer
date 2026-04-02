@@ -161,7 +161,7 @@ class DomainCheckerHistoryController extends Controller
                 'b.id',
                 DB::raw('b.created_at as timestamp'),
                 DB::raw('COUNT(r.id) as url_count'),
-                DB::raw('ROUND(100 * SUM(CASE WHEN r.http_status BETWEEN 200 AND 399 THEN 1 ELSE 0 END) / NULLIF(COUNT(r.id),0)) as success_rate')
+                DB::raw("ROUND(100 * SUM(CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(r.remark, '$.accessible')) = 'true' THEN 1 ELSE 0 END) / NULLIF(COUNT(r.id),0)) as success_rate")
             )
             ->leftJoin('domain_check_results as r', 'r.batch_id', '=', 'b.id')
             ->groupBy('b.id', 'b.created_at')
@@ -425,8 +425,8 @@ class DomainCheckerHistoryController extends Controller
         $dailyRows = (clone $resultsQuery)
             ->selectRaw('DATE(b.created_at) as day')
             ->selectRaw('COUNT(*) as url_count')
-            ->selectRaw('SUM(CASE WHEN r.http_status BETWEEN 200 AND 399 THEN 1 ELSE 0 END) as success_urls')
-            ->selectRaw('SUM(CASE WHEN r.http_status = 404 THEN 1 ELSE 0 END) as not_existed_urls')
+            ->selectRaw("SUM(CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(r.remark, '$.accessible')) = 'true' THEN 1 ELSE 0 END) as success_urls")
+            ->selectRaw("SUM(CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(r.remark, '$.result_kind')) = 'not_existed' OR r.http_status = 404 THEN 1 ELSE 0 END) as not_existed_urls")
             ->groupBy('day')
             ->orderBy('day', 'asc')
             ->get();
@@ -458,8 +458,8 @@ class DomainCheckerHistoryController extends Controller
         $totalBatches = (clone $batchesQuery)->count();
         $totals = (clone $resultsQuery)
             ->selectRaw('COUNT(*) as total_urls')
-            ->selectRaw('SUM(CASE WHEN r.http_status BETWEEN 200 AND 399 THEN 1 ELSE 0 END) as total_successful')
-            ->selectRaw('SUM(CASE WHEN r.http_status = 404 THEN 1 ELSE 0 END) as total_not_existed')
+            ->selectRaw("SUM(CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(r.remark, '$.accessible')) = 'true' THEN 1 ELSE 0 END) as total_successful")
+            ->selectRaw("SUM(CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(r.remark, '$.result_kind')) = 'not_existed' OR r.http_status = 404 THEN 1 ELSE 0 END) as total_not_existed")
             ->first();
 
         $totalUrls = (int)($totals->total_urls ?? 0);
@@ -514,7 +514,7 @@ class DomainCheckerHistoryController extends Controller
         $batchStats = DB::table('domain_check_results')
             ->whereIn('batch_id', $batchIds)
             ->selectRaw('batch_id, COUNT(*) as total_urls')
-            ->selectRaw('SUM(CASE WHEN http_status BETWEEN 200 AND 399 THEN 1 ELSE 0 END) as accessible_count')
+            ->selectRaw("SUM(CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(remark, '$.accessible')) = 'true' THEN 1 ELSE 0 END) as accessible_count")
             ->groupBy('batch_id')
             ->get()
             ->keyBy('batch_id');
@@ -547,12 +547,14 @@ class DomainCheckerHistoryController extends Controller
 
                 $status = (int)($r->http_status ?? 0);
                 $isAccessible = $status >= 200 && $status < 400;
+                $resultKind = is_array($remarkData) ? ($remarkData['result_kind'] ?? null) : null;
 
                 $batchResults[] = [
                     'url' => $r->domain_name,
                     'status' => $status,
                     'time' => $remarkData['time'] ?? 0,
                     'accessible' => $remarkData['accessible'] ?? $isAccessible,
+                    'result_kind' => $resultKind,
                     'timestamp' => $r->checked_at,
                     'error' => null,
                     'remark' => $r->remark,

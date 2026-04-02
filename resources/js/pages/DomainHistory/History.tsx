@@ -25,6 +25,7 @@ interface BatchResult {
     status: number;
     time: number;
     accessible: boolean;
+    result_kind?: string;
     timestamp: string;
     error?: string;
     remark?: string;
@@ -163,11 +164,20 @@ export default function DomainCheckerHistory() {
         }
     };
 
-    const getStatusColorClass = (status: number) => {
-        if (status >= 200 && status < 300) return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-        if (status >= 300 && status < 400) return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-        if (status >= 400 && status < 500) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+    const getStatusColorClass = (result: BatchResult) => {
+        const kind = (result as any).result_kind as string | undefined;
+
+        if (kind === 'not_existed') return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+        if (kind === 'blocked') return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+        if (kind === 'not_blocked') return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+
+        // Fallback for old rows that don't have result_kind stored
+        if (result.status === 404) return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+        if (result.status === 403) return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+
+        // New nslookup rows store http_status as NULL; use accessible boolean instead.
+        if (result.accessible) return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
     };
 
     const formatDNS = (primary: string, secondary: string) => {
@@ -492,10 +502,21 @@ export default function DomainCheckerHistory() {
                                                         <div className="space-y-2">
                                                             {(batch.results || [])
                                                                 .sort((a, b) => {
-                                                                    // Sort by accessibility first (accessible domains on top)
+                                                                    const aNotExisted =
+                                                                        (a as any).result_kind === 'not_existed' || a.status === 404;
+                                                                    const bNotExisted =
+                                                                        (b as any).result_kind === 'not_existed' || b.status === 404;
+
+                                                                    // Not Existed always on top
+                                                                    if (aNotExisted !== bNotExisted) {
+                                                                        return aNotExisted ? -1 : 1;
+                                                                    }
+
+                                                                    // Then sort by accessibility (accessible domains on top)
                                                                     if (a.accessible !== b.accessible) {
                                                                         return b.accessible ? 1 : -1;
                                                                     }
+
                                                                     // Then sort by response time (faster responses first)
                                                                     return a.time - b.time;
                                                                 })
@@ -510,9 +531,15 @@ export default function DomainCheckerHistory() {
                                                                                 }}
                                                                             />
                                                                             <div className="mt-1 flex items-center text-xs">
-                                                                                <span className={`inline-flex items-center px-2 py-0.5 rounded ${getStatusColorClass(result.status)}`}>
-                                                                                    {result.status === 404 ? 'Not Existed' : result.status}
-                                                                                </span>
+                                                                            <span className={`inline-flex items-center px-2 py-0.5 rounded ${getStatusColorClass(result)}`}>
+                                                                                {(result as any).result_kind === 'not_existed' || result.status === 404
+                                                                                    ? 'Not Existed'
+                                                                                    : (result as any).result_kind === 'blocked' || result.status === 403
+                                                                                        ? 'Blocked'
+                                                                                        : result.accessible
+                                                                                            ? 'Not Blocked'
+                                                                                            : 'DNS Failed'}
+                                                                            </span>
                                                                                 <span className="ml-2">{result.time}ms</span>
                                                                                 <span className="ml-2">{new Date(result.timestamp).toLocaleTimeString()}</span>
                                                                                 {result.error && (
@@ -521,11 +548,13 @@ export default function DomainCheckerHistory() {
                                                                             </div>
                                                                         </div>
                                                                         <div className="flex ml-4 flex-shrink-0 items-center space-x-2">
-                                                                            {result.accessible ? (
-                                                                                <CheckCircle className="h-5 w-5 text-green-600" />
-                                                                            ) : (
-                                                                                <XCircle className="h-5 w-5 text-red-600" />
-                                                                            )}
+                                                                        {(result as any).result_kind === 'not_existed' || result.status === 404 ? (
+                                                                            <AlertTriangle className="h-5 w-5 text-blue-600" />
+                                                                        ) : result.accessible ? (
+                                                                            <CheckCircle className="h-5 w-5 text-green-600" />
+                                                                        ) : (
+                                                                            <XCircle className="h-5 w-5 text-red-600" />
+                                                                        )}
                                                                             {isAdmin && (
                                                                                 <Button
                                                                                     variant="ghost"

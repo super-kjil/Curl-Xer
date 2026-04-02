@@ -195,7 +195,7 @@ export default function Dashboard() {
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-md font-medium">Not Existed Domain</CardTitle>
-                            <TriangleAlert className="h-6 w-6 text-blue-600" /><Badge variant="outline" className='bg-blue-500 text-white'>New</Badge>
+                            <TriangleAlert className="h-6 w-6 text-blue-600" /><Badge variant="outline" className='text-blue-500'>New</Badge>
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{stats.total_not_existed}</div>

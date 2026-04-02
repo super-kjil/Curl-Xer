@@ -206,7 +206,7 @@ export function MultiChart({
           <Area
             type={type}
             dataKey="not_existed_urls"
-            stackId="1"
+            stackId="2"
             fill={colors.notExisted}
             stroke={colors.notExisted}
             strokeWidth={strokeWidth}

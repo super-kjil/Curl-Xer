@@ -169,6 +169,18 @@
     color: #ffffff !important;
 }
 
+/* Error Toast (fallback for toast.error with className="error-toast") */
+.toaster [data-sonner-toast].error-toast {
+    background: oklch(57.7% 0.245 27.325) !important;
+    color: #ffffff !important;
+    border: 1px solid oklch(50.5% 0.213 27.518) !important;
+}
+
+.toaster [data-sonner-toast].error-toast [data-description],
+.toaster [data-sonner-toast].error-toast .error-toast-description {
+    color: #ffffff !important;
+}
+
 /* Success Toast */
 .toaster [data-sonner-toast].success-toast {
     background: oklch(62.7% 0.194 149.214) !important;

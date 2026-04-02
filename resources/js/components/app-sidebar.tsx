@@ -4,12 +4,12 @@ import { type NavItem } from '@/types';
 import { 
     Home, 
     Globe, 
-    Search, 
     History, 
     Settings, 
     Shield,
-    FileText,
-    List
+    Sparkle,
+    ScanText,
+    Folders
 } from 'lucide-react';
 import AppLogo from './app-logo';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -36,19 +36,19 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Domain Extractor',
         href: '/domain-extractor',
-        icon: FileText,
+        icon: ScanText,
         permission: 'view_domain_extractor'
     },
     {
         title: 'Domain Generator',
         href: '/domain-generator',
-        icon: Search,
+        icon: Sparkle,
         permission: 'view_domain_generator',
     },
     {
         title: 'Domain List',
         href: '/domain-list',
-        icon: List,
+        icon: Folders,
         permission: 'view_domain_list',
     },
     {

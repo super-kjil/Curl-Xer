@@ -26,7 +26,7 @@ class UrlCheckerService
         $cacheDuration = 15; // 15 minutes
         
         return Cache::remember($cacheKey, $cacheDuration * 60, function () {
-            Log::info('Fetching fresh DNS from server for team cache');
+            // Log::info('Fetching fresh DNS from server for team cache');
             return $this->getDefaultDNS();
         });
     }
@@ -37,7 +37,7 @@ class UrlCheckerService
     public function clearServerDNSCache(): void
     {
         Cache::forget('server_dns_settings');
-        Log::info('Server DNS cache cleared');
+        // Log::info('Server DNS cache cleared');
     }
 
     /**
@@ -110,10 +110,10 @@ class UrlCheckerService
                 // Method 1: Try PowerShell with more comprehensive command (use full path)
                 exec('C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -Command "Clear-DnsClientCache; Get-DnsClientServerAddress -AddressFamily IPv4 | Where-Object {$_.ServerAddresses} | Select-Object -ExpandProperty ServerAddresses" 2>&1', $output, $return_var);
                 
-                Log::info('PowerShell DNS Detection Method 1', [
-                    'output' => $output,
-                    'return_var' => $return_var
-                ]);
+                // Log::info('PowerShell DNS Detection Method 1', [
+                //     'output' => $output,
+                //     'return_var' => $return_var
+                // ]);
 
                 if ($return_var === 0 && !empty($output)) {
                     // Filter out empty lines and get unique IPv4 DNS servers only
@@ -170,10 +170,10 @@ class UrlCheckerService
                     $output = [];
                     exec('C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -Command "Get-NetIPConfiguration | Select-Object -ExpandProperty DNSServer | Where-Object {$_.AddressFamily -eq 2} | Select-Object -ExpandProperty ServerAddresses" 2>&1', $output, $return_var);
                     
-                    Log::info('PowerShell DNS Detection Method 2', [
-                        'output' => $output,
-                        'return_var' => $return_var
-                    ]);
+                    // Log::info('PowerShell DNS Detection Method 2', [
+                    //     'output' => $output,
+                    //     'return_var' => $return_var
+                    // ]);
 
                     if ($return_var === 0 && !empty($output)) {
                         $dns_list = array_filter(array_map('trim', $output));
@@ -201,10 +201,10 @@ class UrlCheckerService
                     $output = [];
                     exec('ipconfig /flushdns && ipconfig /all 2>&1', $output, $return_var);
                     
-                    Log::info('ipconfig DNS Detection Method 3', [
-                        'output_sample' => array_slice($output, 0, 20), // Log first 20 lines
-                        'return_var' => $return_var
-                    ]);
+                    // Log::info('ipconfig DNS Detection Method 3', [
+                    //     'output_sample' => array_slice($output, 0, 20), // Log first 20 lines
+                    //     'return_var' => $return_var
+                    // ]);
 
                     $dns_found = 0;
                     $dns_section = false;
@@ -250,10 +250,10 @@ class UrlCheckerService
                     $output = [];
                     exec('wmic nicconfig where "IPEnabled=true" get DNSServerSearchOrder /format:list 2>&1', $output, $return_var);
                     
-                    Log::info('WMIC DNS Detection Method 4', [
-                        'output' => $output,
-                        'return_var' => $return_var
-                    ]);
+                    // Log::info('WMIC DNS Detection Method 4', [
+                    //     'output' => $output,
+                    //     'return_var' => $return_var
+                    // ]);
 
                     foreach ($output as $line) {
                         if (preg_match('/DNSServerSearchOrder=\{([^}]+)\}/', $line, $matches)) {
@@ -297,15 +297,15 @@ class UrlCheckerService
             }
         } catch (Exception $e) {
             // Log error but don't fail completely
-            Log::error("DNS detection error: " . $e->getMessage());
+            // Log::error("DNS detection error: " . $e->getMessage());
         }
 
         // Log the fresh DNS detection for debugging
-        Log::info('Fresh DNS Detection (No Cache)', [
-            'detected_dns' => $dns_servers,
-            'os' => PHP_OS,
-            'timestamp' => now()
-        ]);
+        // Log::info('Fresh DNS Detection (No Cache)', [
+        //     'detected_dns' => $dns_servers,
+        //     'os' => PHP_OS,
+        //     'timestamp' => now()
+        // ]);
 
         return $dns_servers;
     }
@@ -321,14 +321,14 @@ class UrlCheckerService
             if ($os === 'WIN') {
                 // Clear Windows DNS cache
                 exec('ipconfig /flushdns 2>&1', $output, $return_var);
-                Log::info('Windows DNS cache cleared', ['return_code' => $return_var]);
+                // Log::info('Windows DNS cache cleared', ['return_code' => $return_var]);
             } elseif ($os === 'LIN') {
                 // Clear Linux DNS cache (systemd-resolved)
                 exec('sudo systemctl flush-dns 2>&1 || sudo systemd-resolve --flush-caches 2>&1', $output, $return_var);
-                Log::info('Linux DNS cache cleared', ['return_code' => $return_var]);
+                // Log::info('Linux DNS cache cleared', ['return_code' => $return_var]);
             }
         } catch (Exception $e) {
-            Log::warning('Failed to clear system DNS cache: ' . $e->getMessage());
+            // Log::warning('Failed to clear system DNS cache: ' . $e->getMessage());
         }
     }
 
@@ -396,7 +396,7 @@ class UrlCheckerService
         // Safety check: ensure batch_size is valid
         if (empty($batch_size) || $batch_size <= 0) {
             $batch_size = 500; // Default fallback
-            Log::warning("Invalid batch_size provided to checkURLsOptimized, using default", ['provided_batch_size' => $batch_size]);
+            // Log::warning("Invalid batch_size provided to checkURLsOptimized, using default", ['provided_batch_size' => $batch_size]);
         }
         
         $total_urls = count($urls);
@@ -407,12 +407,12 @@ class UrlCheckerService
         $url_batches = array_chunk($urls, $batch_size);
         $total_batches = count($url_batches);
 
-        Log::info("Starting optimized URL check", [
-            'total_urls' => $total_urls,
-            'total_batches' => $total_batches,
-            'batch_size' => $batch_size,
-            'max_concurrent_batches' => $max_concurrent_batches
-        ]);
+        // Log::info("Starting optimized URL check", [
+        //     'total_urls' => $total_urls,
+        //     'total_batches' => $total_batches,
+        //     'batch_size' => $batch_size,
+        //     'max_concurrent_batches' => $max_concurrent_batches
+        // ]);
 
         // Process batches with controlled concurrency
         for ($i = 0; $i < $total_batches; $i += $max_concurrent_batches) {
@@ -427,11 +427,11 @@ class UrlCheckerService
 
             // Log progress
             $progress = round(($processed / $total_urls) * 100, 2);
-            Log::info("URL check progress", [
-                'processed' => $processed,
-                'total' => $total_urls,
-                'progress_percent' => $progress
-            ]);
+            // Log::info("URL check progress", [
+            //     'processed' => $processed,
+            //     'total' => $total_urls,
+            //     'progress_percent' => $progress
+            // ]);
 
             // Small delay to prevent overwhelming the system
             usleep(100000); // 0.1 second
@@ -466,7 +466,7 @@ class UrlCheckerService
         // Safety check: ensure batch_size is valid
         if (empty($batch_size) || $batch_size <= 0) {
             $batch_size = 100; // Default fallback
-            Log::warning("Invalid batch_size provided, using default", ['provided_batch_size' => $batch_size]);
+            // Log::warning("Invalid batch_size provided, using default", ['provided_batch_size' => $batch_size]);
         }
 
         $results = [];
@@ -479,11 +479,12 @@ class UrlCheckerService
             if ($domain === false) {
                 $results[] = [
                     'url' => $displayDomain !== '' ? $displayDomain : (string)$domainInput,
-                    'status' => 0,
+                    'status' => null,
                     'time' => 0,
                     'accessible' => false,
                     'error' => 'Invalid domain format',
-                    'message' => 'Invalid domain format'
+                    'message' => 'Invalid domain format',
+                    'result_kind' => 'invalid_domain',
                 ];
                 continue;
             }
@@ -498,7 +499,8 @@ class UrlCheckerService
                 'time' => $elapsedMs,
                 'accessible' => $lookupResult['accessible'],
                 'error' => $lookupResult['error'],
-                'message' => $lookupResult['message']
+                'message' => $lookupResult['message'],
+                'result_kind' => $lookupResult['result_kind'] ?? null,
             ];
         }
 
@@ -519,10 +521,11 @@ class UrlCheckerService
 
         if ($this->isNxDomainResponse($rawText, $lines)) {
             return [
-                'status' => 404,
+                'status' => null,
                 'accessible' => false,
                 'error' => 'Domain not existed',
-                'message' => 'Domain not existed'
+                'message' => 'Domain not existed',
+                'result_kind' => 'not_existed',
             ];
         }
 
@@ -559,27 +562,30 @@ class UrlCheckerService
 
         if ($ip === '0.0.0.0') {
             return [
-                'status' => 403,
+                'status' => null,
                 'accessible' => false,
                 'error' => null,
-                'message' => 'Blocked'
+                'message' => 'Address: 0.0.0.0 = Blocked',
+                'result_kind' => 'blocked',
             ];
         }
 
         if ($ip && $resolvedName) {
             return [
-                'status' => 200,
+                'status' => null,
                 'accessible' => true,
                 'error' => null,
-                'message' => "Address: {$ip} & Name: {$resolvedName} = Not Blocked"
+                'message' => "Address: {$ip} & Name: {$resolvedName} = Not Blocked",
+                'result_kind' => 'not_blocked',
             ];
         }
 
         return [
-            'status' => 0,
+            'status' => null,
             'accessible' => false,
             'error' => 'DNS lookup failed',
-            'message' => 'DNS lookup failed'
+            'message' => 'DNS lookup failed',
+            'result_kind' => 'dns_failed',
         ];
     }
 

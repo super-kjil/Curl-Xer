@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, type FileRejection } from 'react-dropzone';
 import mammoth from 'mammoth';
 import { Upload, FileText, Copy, CheckCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Head } from '@inertiajs/react';
 import { BreadcrumbItem } from '@/types';
 import { Badge } from '@/components/ui/badge';
-
+import wordLogo from '../../../../public/word-icon.png';
 interface ExtractedContent {
   text: string;
   domains: string[];
@@ -74,8 +74,15 @@ export default function Index() {
     if (!file) return;
 
     if (!file.name.endsWith('.docx')) {
-      toast.error("Please upload a .docx file");
+      toast.error("Please upload a .docx file", {
+        className: 'error-toast',
+        descriptionClassName: 'error-toast-description',
+        duration: 5000,
+        description: 'Please upload a .docx file',
+      });
+      
       return;
+      
     }
 
     setIsProcessing(true);
@@ -99,18 +106,49 @@ export default function Index() {
         setExtractedContent(content);
         saveToLocalStorage(content);
 
-        toast.success(`Extracted ${domains.length} domain names and ${ipv4Addresses.length} IPv4 addresses`);
+        toast.success('Content extracted successfully', {
+          className: 'success-toast',
+          descriptionClassName: 'success-toast-description',
+          duration: 5000,
+          description: `Extracted ${domains.length} domain names and ${ipv4Addresses.length} IPv4 addresses`,
+        });
       }
     } catch (error) {
       console.error('Error processing file:', error);
-      toast.error("Failed to extract content from the document");
+      toast.error("Failed to extract content from the document", {
+        className: 'error-toast',
+        descriptionClassName: 'error-toast-description',
+        duration: 5000,
+        description: 'Failed to extract content from the document',
+      });
     } finally {
       setIsProcessing(false);
     }
   }, [toast]);
 
+  const onDropRejected = useCallback(
+    (fileRejections: FileRejection[]) => {
+      if (!fileRejections.length) return;
+
+      const rejection = fileRejections[0];
+      const file = rejection?.file;
+
+      toast.error(
+        'Error File type',
+        {
+          className: 'error-toast',
+          descriptionClassName: 'error-toast-description',
+          duration: 5000,
+          description: 'Please upload a .docx file',
+        }
+      );
+    },
+    [toast]
+  );
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    onDropRejected,
     accept: {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
     },
@@ -212,10 +250,19 @@ export default function Index() {
 
     if (success) {
       setCopiedState(true);
-      toast.success("Content has been copied successfully");
-      setTimeout(() => setCopiedState(false), 2000);
+      toast.success("Copied", {
+        className: 'success-toast',
+        descriptionClassName: 'success-toast-description',
+        duration: 3000,
+        description: 'Content has been copied successfully',
+      });
     } else {
-      toast.error("Could not copy to clipboard. Please select and copy manually.");
+      toast.error("Could not copy to clipboard. Please select and copy manually.", {
+        className: 'error-toast',
+        descriptionClassName: 'error-toast-description',
+        duration: 3000,
+        description: 'Could not copy to clipboard. Please select and copy manually.',
+      });
     }
   };
 
@@ -234,15 +281,17 @@ export default function Index() {
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Domain Extractor" />
-
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            MS Word Document Extractor
-          </h1>
-          <p className="text-muted-foreground">
-            Upload a .docx file to extract domain names and text content
-          </p>
+        <div className="flex flex-col sm:flex-row items-center sm:items-start justify-center gap-4 mb-8">
+          <img src={wordLogo} className="w-16 h-16" />
+          <div className="text-center sm:text-left">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              MS Word Document Extractor
+            </h1>
+            <p className="text-muted-foreground">
+              Upload a .docx file to extract domain names and text content
+            </p>
+          </div>
         </div>
 
         {/* File Upload Area */}
@@ -299,8 +348,10 @@ export default function Index() {
             <Card className="h-full">
               <CardHeader>
                 <CardTitle className="flex flex-col gap-1">
-                  <div className="text-sm font-normal text-muted-foreground">
-                    File Name : 
+                  <div className="text-sm font-normal text-muted-foreground disabled:opacity-50 flex items-center gap-2">
+                    <p className='mb-1 select-none'>
+                      File Name : 
+                    </p>
                     <Badge variant="outline">
                       {extractedContent.fileName.replace('.docx', '')}
                     </Badge>
@@ -308,7 +359,7 @@ export default function Index() {
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <FileText className="h-5 w-5" />
-                      Extracted Domain Names
+                      Domain Names
                       <Badge>
                         {extractedContent.domains.length}
                       </Badge>
@@ -378,7 +429,7 @@ export default function Index() {
                       >
                         {copiedIpv4 ? (
                           <>
-                            <CheckCircle className="h-4 w-4 text-success" />
+                            <CheckCircle className="h-4 w-4 text-green-600" />
                             Copied!
                           </>
                         ) : (

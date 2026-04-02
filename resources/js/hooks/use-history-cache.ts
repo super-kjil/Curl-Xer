@@ -8,6 +8,7 @@ interface BatchResult {
     status: number;
     time: number;
     accessible: boolean;
+    result_kind?: string;
     timestamp: string;
     error?: string;
     remark?: string;

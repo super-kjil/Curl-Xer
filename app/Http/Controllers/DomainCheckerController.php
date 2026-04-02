@@ -127,14 +127,31 @@ class DomainCheckerController extends Controller
         // Prepare bulk insert for results
         $now = now();
         $rows = array_map(function ($r) use ($batch, $now) {
+            $resultKind = $r['result_kind'] ?? null;
+            $httpStatus = isset($r['status']) && $r['status'] !== null ? (int)$r['status'] : null;
+
+            // Backward compatibility: if result_kind is missing, infer from old status mapping.
+            if (!$resultKind && $httpStatus !== null) {
+                if ($httpStatus === 403) {
+                    $resultKind = 'blocked';
+                } elseif ($httpStatus === 404) {
+                    $resultKind = 'not_existed';
+                } elseif ($httpStatus === 200) {
+                    $resultKind = 'not_blocked';
+                }
+            }
+
+            // We no longer store fake http status for nslookup results.
+            $storeHttpStatus = $resultKind ? null : $httpStatus;
+
             $remark = [
-                'time' => $r['time'] ?? 0,
                 'accessible' => $r['accessible'] ?? false,
+                'result_kind' => $resultKind,
             ];
             return [
                 'batch_id' => $batch->id,
                 'domain_name' => $r['url'] ?? '',
-                'http_status' => isset($r['status']) ? (int)$r['status'] : null,
+                'http_status' => $storeHttpStatus,
                 'remark' => json_encode($remark),
                 'checked_at' => $now,
                 'created_at' => $now,

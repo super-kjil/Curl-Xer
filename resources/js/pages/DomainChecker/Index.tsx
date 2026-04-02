@@ -24,11 +24,12 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 interface UrlResult {
     url: string;
-    status: number;
+    status: number | null;
     time: number;
     accessible: boolean;
     error?: string;
     message?: string;
+    result_kind?: string;
 }
 
 interface CheckResponse {
@@ -67,6 +68,24 @@ export default function DomainCheckerIndex() {
         const domain = cleanDomainInput(value);
         if (!domain) return false;
         if (/[ \t\r\n_]/.test(domain)) return false;
+
+        // Reject IP addresses (IPv4 / IPv6)
+        const isIPv4 = (v: string) => {
+            const m = v.match(/^(\d{1,3})(\.\d{1,3}){3}$/);
+            if (!m) return false;
+            return v.split('.').every((part) => {
+                const n = Number(part);
+                return Number.isInteger(n) && n >= 0 && n <= 255;
+            });
+        };
+
+        const isIPv6 = (v: string) => {
+            // Very permissive: must contain ":" and only hex digits/":".
+            if (!v.includes(':')) return false;
+            return /^[0-9a-fA-F:]+$/.test(v);
+        };
+
+        if (isIPv4(domain) || isIPv6(domain)) return false;
 
         // Must contain at least one dot: facebook.com valid, facebook invalid
         const parts = domain.split('.').filter(Boolean);
@@ -239,12 +258,11 @@ export default function DomainCheckerIndex() {
         }
     };
 
-    const getStatusColor = (status: number) => {
-        if (status >= 200 && status < 300) return 'text-green-600';
-        if (status >= 300 && status < 400) return 'text-blue-600';
-        if (status >= 400 && status < 500) return 'text-yellow-600';
-        if (status >= 500) return 'text-red-600';
-        return 'text-red-600';
+    const getStatusColor = (result: UrlResult) => {
+        if (result.result_kind === 'blocked') return 'text-red-600';
+        if (result.result_kind === 'not_existed') return 'text-blue-600';
+        if (result.accessible) return 'text-green-600';
+        return 'text-yellow-600';
     };
 
     const getUrlCount = () => {
@@ -393,7 +411,10 @@ export default function DomainCheckerIndex() {
                                             </Badge>                                           
                                             <Badge variant="outline">
                                                 Not Existed: <span className="ml-1 font-semibold text-blue-600">{results.filter(result => result.message?.trim().toLowerCase() === 'domain not existed').length}</span>
-                                            </Badge>             
+                                            </Badge> 
+                                            <Badge variant="outline" className="text-blue-600" >
+                                                New 
+                                            </Badge>            
                                         </div>
                                     </div>
                                 </CardHeader>
@@ -437,8 +458,7 @@ export default function DomainCheckerIndex() {
                                                 })
                                                 .map((result, index) => (
                                                     (() => {
-                                                        const isDomainNotExisted =
-                                                            result.message?.trim().toLowerCase() === 'domain not existed';
+                                                        const isDomainNotExisted = result.result_kind === 'not_existed';
 
                                                         return (
                                                     <div
@@ -458,9 +478,9 @@ export default function DomainCheckerIndex() {
                                                                     <Badge
                                                                         variant="outline"
                                                                         className={
-                                                                            result.message?.trim().toLowerCase() === 'domain not existed'
+                                                                            result.result_kind === 'not_existed'
                                                                                 ? 'text-blue-500'
-                                                                                : getStatusColor(result.status)
+                                                                                : getStatusColor(result)
                                                                         }
                                                                     >
                                                                         {result.message}
