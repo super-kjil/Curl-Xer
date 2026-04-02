@@ -180,16 +180,16 @@ export default function DomainCheckerHistory() {
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
     };
 
-    const formatDNS = (primary: string, secondary: string) => {
-        const primaryDNS = primary || 'Auto';
-        const secondaryDNS = secondary || '0.0.0.0';
-        return `Primary: ${primaryDNS}, Secondary: ${secondaryDNS}`;
-    };
 
     const copyHistory = (group: GroupedHistoryItem) => {
         const allResults = group.batches.flatMap((b) => b.results || []);
         if (!allResults || allResults.length === 0) {
-            toast.error('No results to copy');
+            toast.error('Error', {
+                className: 'error-toast',
+                descriptionClassName: 'error-toast-description',
+                duration: 3000,
+                description: 'No results to copy',
+            });
             return;
         }
 
@@ -210,7 +210,12 @@ export default function DomainCheckerHistory() {
             navigator.clipboard
                 .writeText(textToCopy)
                 .then(() => {
-                    toast.success('URLs with timestamps copied to clipboard');
+                    toast.success('Successfully', {
+                        className: 'success-toast',
+                        descriptionClassName: 'success-toast-description',
+                        duration: 3000,
+                        description: 'Successfully copied to clipboard',
+                    });
                 })
                 .catch(() => {
                     // Fallback to legacy method
@@ -320,13 +325,13 @@ export default function DomainCheckerHistory() {
                         <div className="grid w-full max-w-sm items-center gap-3">
                             <div className="flex items-center gap-2">
                                 <Search />
-                                <Label>Search</Label>
+                                <Label>Search by filename, or URL... (Ctrl+F)</Label>
                             </div>
                             <div className=" flex gap-2 items-center">
                                 <Input
                                     className='w-lg'
                                     ref={searchInputRef}
-                                    placeholder="Search by filename, command, or URL... (Ctrl+F)"
+                                    placeholder="Search..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onKeyDown={(e) => {
@@ -419,10 +424,6 @@ export default function DomainCheckerHistory() {
                                                         <div className="text-sm text-gray-600 dark:text-gray-400">
                                                             Success Rate: <span className="font-semibold text-green-600">{item.avgSuccessRate}%</span>
                                                         </div>
-                                                        {/* <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                            DNS:{' '}
-                                                            <span className="text-sm font-mono">{formatDNS(item.primaryDns, item.secondaryDns)}</span>
-                                                        </div> */}
                                                     </div>
                                                 </div>
 

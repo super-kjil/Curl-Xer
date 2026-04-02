@@ -391,7 +391,12 @@ export const useHistoryCache = () => {
                 // Update cache
                 const updatedHistory = history.filter(item => item.command !== command);
                 await saveToCache(updatedHistory);
-                toast.success('History item deleted');
+                toast.success('Successfully', {
+                    className: 'success-toast',
+                    descriptionClassName: 'success-toast-description',
+                    duration: 3000,
+                    description: 'History item deleted',
+                });
             } else {
                 const errorMessage = response.data.message || 'Failed to delete history item';
                 toast.error(errorMessage);

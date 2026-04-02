@@ -9,7 +9,7 @@ import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import axios from 'axios';
-import { AtSign, Calendar, Copy, CopyCheck, Globe, Link2, Loader2, Tag, Trash2, Zap } from 'lucide-react';
+import { AtSign, Calendar, CheckCircle, Copy, CopyCheck, Globe, Link2, Loader2, Sparkles, Tag, Trash2, Zap } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -112,7 +112,12 @@ export default function UrlGeneratorIndex() {
             setTotalUrls(0);
             setTotalGenerated(0);
             setDuplicateCount(0);
-            toast.success('Stored results cleared');
+            toast.success('Succesfully', {
+                className: 'info-toast',
+                descriptionClassName: 'info-toast-description',
+                duration: 3000,
+                description: 'Stored results cleared',
+            });
         } catch (error) {
             console.warn('Failed to clear stored results:', error);
         }
@@ -158,14 +163,24 @@ export default function UrlGeneratorIndex() {
             setTotalGenerated(storedResults.totalGenerated);
             setDuplicateCount(storedResults.duplicateCount);
             setHasStoredResults(true);
-            toast.info('Previous results restored from storage');
+            toast.info('Previous results restored from storage', {
+                className: 'info-toast',
+                descriptionClassName: 'info-toast-description',
+                duration: 3000,
+                description: 'Previous results restored from storage',
+            });
         }
 
         // Set up periodic session check
         const sessionCheckInterval = setInterval(() => {
             if (isSessionExpired()) {
                 clearStoredResults();
-                toast.warning('Session expired, stored results cleared');
+                toast.warning('Session expired, stored results cleared', {
+                    className: 'warning-toast',
+                    descriptionClassName: 'warning-toast-description',
+                    duration: 3000,
+                    description: 'Session expired, stored results cleared',
+                });
             }
         }, 60000); // Check every minute
 
@@ -193,7 +208,12 @@ export default function UrlGeneratorIndex() {
         try {
             await navigator.clipboard.writeText(text);
             setCopiedItems((prev) => new Set(prev).add(itemId));
-            toast.success('Copied to clipboard!');
+            toast.success('Copied', {
+                className: 'success-toast',
+                descriptionClassName: 'success-toast-description',
+                duration: 3000,
+                description: 'Copied to clipboard!',
+            });
 
             // Remove the copied state after 2 seconds
             setTimeout(() => {
@@ -214,16 +234,27 @@ export default function UrlGeneratorIndex() {
             try {
                 document.execCommand('copy');
                 setCopiedItems((prev) => new Set(prev).add(itemId));
-                toast.success('Copied to clipboard!');
-                setTimeout(() => {
-                    setCopiedItems((prev) => {
-                        const newSet = new Set(prev);
-                        newSet.delete(itemId);
-                        return newSet;
-                    });
-                }, 3000);
+                toast.success('Copied', {
+                    className: 'success-toast',
+                    descriptionClassName: 'success-toast-description',
+                    duration: 3000,
+                    description: 'Copied to clipboard!',
+                });
+                setCopiedItems((prev) => {
+                    const newSet = new Set(prev);
+                    newSet.delete(itemId);
+                    return newSet;
+                });
+                // setTimeout(() => {
+                    
+                // }, 3000);
             } catch {
-                toast.error('Failed to copy to clipboard');
+                toast.error('Failed to copy to clipboard', {
+                    className: 'error-toast',
+                    descriptionClassName: 'error-toast-description',
+                    duration: 3000,
+                    description: 'Failed to copy to clipboard',
+                });
             }
             document.body.removeChild(textarea);
         }
@@ -266,7 +297,8 @@ export default function UrlGeneratorIndex() {
                     message += ` (${response.data.duplicate_count} duplicates removed)`;
                 }
 
-                toast.success('Domains generated successfully', {
+                toast.success('Successfully', {
+                    className: 'success-toast',
                     description: message + ' (Results saved to storage)',
                 });
             }
@@ -306,7 +338,7 @@ export default function UrlGeneratorIndex() {
                                 className="flex items-center"
                             >
                                 {copiedItems.has(groupCopyId) ? (
-                                    <CopyCheck className="mr-1.5 h-4 w-4 text-green-600" />
+                                    <CheckCircle className="mr-1.5 h-4 w-4 text-green-600" />
                                 ) : (
                                     <Copy className="mr-1.5 h-4 w-4" />
                                 )}
@@ -333,7 +365,7 @@ export default function UrlGeneratorIndex() {
                                             className="ml-3 p-1"
                                         >
                                             {copiedItems.has(itemCopyId) ? (
-                                                <CopyCheck className="h-4 w-4 text-green-600" />
+                                                <CheckCircle className="h-4 w-4 text-green-600" />
                                             ) : (
                                                 <Copy className="h-4 w-4" />
                                             )}
@@ -350,16 +382,14 @@ export default function UrlGeneratorIndex() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="URL Generator" />
-
-            <div className="min-h-screen bg-background">
-                {/* Header */}
-                <div className=" py-8">
+            <Head title="Domains Generator" />
+            <div className="container mx-auto px-4 py-8 max-w-4xl">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start justify-center gap-4 mb-8">
                     <div className="container mx-auto px-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h1 className="flex items-center text-3xl font-bold">
-                                    <Link2 className="mr-3 h-8 w-8" /> Domains Generator
+                        <div className="flex items-center justify-center">
+                            <div className="text-center sm:text-left">
+                                <h1 className="flex items-center text-3xl font-bold justify-center">
+                                    <Sparkles className="mr-3 h-8 w-8" /> Domains Generator
                                 </h1>
                                 <p className="mt-2 opacity-90">Create formatted Domains with automatic www/non-www variants</p>
                             </div>
@@ -451,7 +481,7 @@ export default function UrlGeneratorIndex() {
                                     {/* Options */}
                                     <div>
                                         <Label className="mb-2 flex items-center">Options</Label>
-                                        <div className="space-y-2">
+                                        <div className="space-y-2 ">
                                             <div className="flex items-center space-x-2">
                                                 <Checkbox
                                                     id="includeWww"
@@ -498,7 +528,7 @@ export default function UrlGeneratorIndex() {
 
                     {/* Results */}
                     {(results.www || results.non_www) && (
-                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 shadow-2xl">
                             {results.www && renderUrlGroup('With www', results.www, <Globe className="h-5 w-5 text-blue-500" />, 'www')}
                             {results.non_www &&
                                 renderUrlGroup('Without www', results.non_www, <AtSign className="h-5 w-5 text-purple-500" />, 'non-www')}
@@ -506,7 +536,7 @@ export default function UrlGeneratorIndex() {
                     )}
 
                     {/* Summary */}
-                    {totalGenerated > 0 && (
+                    {/* {totalGenerated > 0 && (
                         <Card className="mt-6">
                             <CardContent className="pt-6">
                                 <div className="flex items-center justify-center space-x-6 text-sm text-muted-foreground">
@@ -527,7 +557,7 @@ export default function UrlGeneratorIndex() {
                                 </div>
                             </CardContent>
                         </Card>
-                    )}
+                    )} */}
                 </div>
             </div>
         </AppLayout>

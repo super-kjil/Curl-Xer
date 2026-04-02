@@ -5,9 +5,12 @@ import { Head } from '@inertiajs/react';
 import { PermissionGate } from '@/components/permission-gate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, ExternalLink } from 'lucide-react';
-import React from 'react'
+import { Shield, RefreshCw, Search } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+import { Label } from '@/components/ui/label';
 
 function index() {
     const breadcrumbs: BreadcrumbItem[] = [
@@ -16,6 +19,115 @@ function index() {
             href: '/domain-list',
         },
     ];
+
+    const [domains, setDomains] = useState<string[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [search, setSearch] = useState('');
+    const [appliedSearch, setAppliedSearch] = useState('');
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    const loadDomains = async (forceRefresh = false) => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const url = forceRefresh ? '/domain-list/domains?refresh=1' : '/domain-list/domains';
+            const res = await fetch(url, {
+                headers: { Accept: 'application/json' },
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data?.success) {
+                const message = data?.message || 'Failed to load domain list';
+                setError(message);
+                toast.error('Error', {
+                    className: 'error-toast',
+                    descriptionClassName: 'error-toast-description',
+                    duration: 4000,
+                    description: message,
+                });
+                return;
+            }
+
+            setDomains(Array.isArray(data.domains) ? data.domains : []);
+        } catch (e) {
+            const message = e instanceof Error ? e.message : 'Failed to load domain list';
+            setError(message);
+            toast.error('Error', {
+                className: 'error-toast',
+                descriptionClassName: 'error-toast-description',
+                duration: 4000,
+                description: message,
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadDomains();
+    }, []);
+
+    // Keyboard shortcut for search (Ctrl+F)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
+    const handleSearch = () => {
+        setAppliedSearch(search);
+    };
+
+    const filteredDomains = useMemo(() => {
+        const q = appliedSearch.trim().toLowerCase();
+        if (!q) return domains;
+
+        return domains.filter((d) => d.toLowerCase().includes(q));
+    }, [domains, appliedSearch]);
+
+    // Keep first found result visible in the scroll container.
+    useEffect(() => {
+        if (!appliedSearch.trim()) return;
+        const firstFound = document.querySelector('[data-first-found="true"]');
+        if (firstFound instanceof HTMLElement) {
+            firstFound.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+                inline: 'nearest',
+            });
+        }
+    }, [appliedSearch, filteredDomains]);
+
+    const renderHighlightedDomain = (d: string) => {
+        const q = appliedSearch.trim();
+        if (!q) return d;
+
+        const lower = d.toLowerCase();
+        const idx = lower.indexOf(q.toLowerCase());
+        if (idx < 0) return d;
+
+        const before = d.slice(0, idx);
+        const match = d.slice(idx, idx + q.length);
+        const after = d.slice(idx + q.length);
+
+        return (
+            <>
+                {before}
+                <span className="bg-yellow-200 dark:bg-yellow-800 px-1 rounded text-foreground">
+                    {match}
+                </span>
+                {after}
+            </>
+        );
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -38,10 +150,125 @@ function index() {
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight">Domain List</h1>
                             <p className="text-muted-foreground">
-                                Access external domain dashboards and tools
+                                Fetch and search domains from list.txt
                             </p>
                         </div>
                     </div>
+
+                    <Card>
+                        <CardHeader className="space-y-3">
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                <div className="flex flex-col gap-2">
+                                    <CardTitle className="flex items-center gap-2">
+                                        Block List
+                                        <Badge variant="secondary">
+                                            {domains.length}
+                                        </Badge>
+                                    </CardTitle>
+                                    <CardDescription>
+                                        {appliedSearch.trim()
+                                            ? `Found ${filteredDomains.length} / ${domains.length}`
+                                            : `Total ${domains.length}`}
+                                    </CardDescription>
+                                </div>
+
+                                {/* Search Bar (match History UX) */}
+                                <div className="w-full lg:max-w-[460px]">
+                                    <div className="grid w-full items-center gap-3">
+                                        <div className="flex items-center gap-2">
+                                            <Search />
+                                            <Label>Search domain... (Ctrl+F)</Label>
+                                        </div>
+
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                            <Input
+                                                ref={searchInputRef}
+                                                placeholder="Search..."
+                                                value={search}
+                                                onChange={(e) => setSearch(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Escape') {
+                                                        setSearch('');
+                                                        setAppliedSearch('');
+                                                    }
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        handleSearch();
+                                                    }
+                                                }}
+                                            />
+
+                                            <div className="flex items-center gap-2 sm:shrink-0">
+                                                <Button
+                                                    onClick={handleSearch}
+                                                    disabled={loading}
+                                                >
+                                                    Search
+                                                </Button>
+                                                <Button
+                                                    onClick={() => {
+                                                        setSearch('');
+                                                        setAppliedSearch('');
+                                                    }}
+                                                    disabled={!search && !appliedSearch}
+                                                    variant="outline"
+                                                >
+                                                    Clear Search
+                                                </Button>
+
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={() => loadDomains(true)}
+                                                    disabled={loading}
+                                                    title="Reload domain list"
+                                                >
+                                                    <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        {appliedSearch.trim() && (
+                                            <p className="text-sm text-muted-foreground">
+                                                Found {filteredDomains.length} results for "{appliedSearch}"
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {error && (
+                                <CardDescription className="text-red-600 dark:text-red-400">
+                                    {error}
+                                </CardDescription>
+                            )}
+                        </CardHeader>
+                        <CardContent>
+                            {loading ? (
+                                <div className="py-8 text-center text-muted-foreground">
+                                    Loading domain list...
+                                </div>
+                            ) : filteredDomains.length === 0 ? (
+                                <div className="py-8 text-center text-muted-foreground">
+                                    No domains found{appliedSearch ? ` for "${appliedSearch}"` : ''}.
+                                </div>
+                            ) : (
+                                <div className="max-h-[420px] overflow-auto rounded-md border bg-muted/10 p-3">
+                                    <div className="grid grid-cols-1 gap-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                                        {filteredDomains.map((d, index) => (
+                                            <div
+                                                key={`${d}-${index}`}
+                                                data-first-found={index === 0 ? 'true' : undefined}
+                                                className="truncate rounded px-2 py-1 font-mono text-sm"
+                                                title={d}
+                                            >
+                                                {renderHighlightedDomain(d)}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
 
                     <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2">
                         <Card>

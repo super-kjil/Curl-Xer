@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\DomainListController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -37,9 +38,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('domain-extractor')->middleware('permission:view_domain_extractor');
     
     // Domain List Routes
-    Route::get('domain-list', function () {
-        return Inertia::render('DomainList/index');
-    })->name('domain-list')->middleware('permission:view_domain_list');
+    Route::middleware('permission:view_domain_list')->group(function () {
+        Route::get('domain-list', [DomainListController::class, 'index'])->name('domain-list');
+        Route::get('domain-list/domains', [DomainListController::class, 'fetchList'])->name('domain-list.domains');
+    });
 
     // Domain Checker Routes
     Route::prefix('domain-checker')->name('domain-checker.')->middleware('permission:view_domain_checker')->group(function () {

@@ -46,7 +46,7 @@ const mainNavItems: NavItem[] = [
         permission: 'view_domain_generator',
     },
     {
-        title: 'Domain List',
+        title: 'Block List',
         href: '/domain-list',
         icon: Folders,
         permission: 'view_domain_list',
