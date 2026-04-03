@@ -10,6 +10,7 @@ A modern, high-performance domain and URL checking application built with Larave
 - **Performance Settings**: User-configurable batch sizes and timeout values
 - **History Management**: Comprehensive tracking of all URL checks with caching
 - **Dashboard Analytics**: Visual charts and statistics with intelligent caching
+- **Domain Comparer**: Compare two domain lists and identify differences (domains in one list but not in another)
 - **User Authentication**: Secure user management with Laravel Breeze
 
 ### Advanced User Management
@@ -106,6 +107,9 @@ The `User` model uses the `HasRoles` trait from Spatie, providing methods like:
 - `view_dashboard`: Access to main dashboard
 - `view_domain_generator`: Access to domain generation tools
 - `view_domain_checker`: Access to URL checking functionality
+- `view_domain_comparer`: Access to domain comparison tools
+- `view_domain_extractor`: Access to domain extraction tools
+- `view_domain_list`: Access to domain list management
 - `view_domain_history`: Access to history and analytics
 - `manage_users`: Create, edit, and delete users
 - `manage_roles`: Create and manage custom roles

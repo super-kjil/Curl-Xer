@@ -205,6 +205,18 @@
     color: #ffffff !important;
 }
 
+/* Warning Toast */
+.toaster [data-sonner-toast].warning-toast {
+    background: oklch(79.5% 0.184 86.047) !important;
+    color: #ffffff !important;
+    border: 1px solid oklch(68.1% 0.162 75.834) !important;
+}
+
+.toaster [data-sonner-toast].warning-toast [data-description],
+.toaster [data-sonner-toast].warning-toast .warning-toast-description {
+    color: #ffffff !important;
+}
+
 /* Ensure proper contrast in light mode */
 :root {
     --toast-description: oklch(0.4 0 0);

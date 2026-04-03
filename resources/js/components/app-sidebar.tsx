@@ -9,7 +9,8 @@ import {
     Shield,
     Sparkle,
     ScanText,
-    Folders
+    Folders,
+    GitCompare
 } from 'lucide-react';
 import AppLogo from './app-logo';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -45,13 +46,22 @@ const mainNavItems: NavItem[] = [
         href: '/domain-generator',
         icon: Sparkle,
         permission: 'view_domain_generator',
+        
     },
     {
         title: 'Block List',
         href: '/domain-list',
         icon: Folders,
         permission: 'view_domain_list',
+        // badge: <Badge variant="secondary" className=" text-green-600">New</Badge>,   // ← Added
+    },
+    {
+        title: 'Domain Comparer',
+        href: '/domain-comparer',
+        icon: GitCompare,
+        permission: 'view_domain_comparer',
         badge: <Badge variant="secondary" className=" text-green-600">New</Badge>,   // ← Added
+
     },
     {
         title: 'Domain Checker',

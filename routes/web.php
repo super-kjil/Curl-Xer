@@ -42,6 +42,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('domain-list', [DomainListController::class, 'index'])->name('domain-list');
     });
 
+    // Domain Comparer Routes
+    Route::prefix('domain-comparer')->name('domain-comparer.')->middleware('permission:view_domain_comparer')->group(function () {
+        Route::get('/', [App\Http\Controllers\DomainComparerController::class, 'index'])->name('index');
+        Route::post('/compare', [App\Http\Controllers\DomainComparerController::class, 'compare'])->name('compare');
+        Route::post('/download', [App\Http\Controllers\DomainComparerController::class, 'downloadResults'])->name('download');
+    });
+
     // Domain Checker Routes
     Route::prefix('domain-checker')->name('domain-checker.')->middleware('permission:view_domain_checker')->group(function () {
         Route::get('/', [App\Http\Controllers\DomainCheckerController::class, 'index'])->name('index');
