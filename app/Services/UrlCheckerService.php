@@ -534,7 +534,8 @@ class UrlCheckerService
         $seenName = false;
 
         foreach ($lines as $line) {
-            if (preg_match('/^Name:\s*(.+)$/i', $line, $nameMatch)) {
+            // Updated regex: allow leading whitespace (\s*)
+            if (preg_match('/^\s*Name:\s*(.+)$/i', $line, $nameMatch)) {
                 $resolvedName = trim($nameMatch[1]);
                 $seenName = true;
                 continue;
@@ -544,7 +545,8 @@ class UrlCheckerService
                 continue;
             }
 
-            if (preg_match('/^Addresses?:\s*(.+)$/i', $line, $addrMatch)) {
+            // Updated regex: allow leading whitespace (\s*)
+            if (preg_match('/^\s*Addresses?:\s*(.+)$/i', $line, $addrMatch)) {
                 $candidate = trim($addrMatch[1]);
                 if (filter_var($candidate, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
                     $resolvedAddresses[] = $candidate;

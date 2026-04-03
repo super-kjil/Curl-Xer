@@ -196,21 +196,42 @@ class DomainCheckerController extends Controller
     public function debugDNS()
     {
         $dns = $this->urlCheckerService->getDefaultDNS();
+        $os = strtoupper(substr(PHP_OS, 0, 3));
         
-        // Get raw PowerShell output for debugging
-        $output = [];
-        exec('powershell -Command "Get-DnsClientServerAddress | Select-Object -ExpandProperty ServerAddresses"', $output);
-        
-        // Get raw ipconfig output for debugging
-        $ipconfig_output = [];
-        exec('ipconfig /all', $ipconfig_output);
-        
-        return response()->json([
+        $debug_info = [
             'success' => true,
             'dns' => $dns,
-            'powershell_output' => $output,
-            'ipconfig_output' => array_slice($ipconfig_output, 0, 50), // First 50 lines
-            'os' => PHP_OS
-        ]);
+            'os' => PHP_OS,
+            'php_user' => get_current_user(),
+            'exec_enabled' => function_exists('exec'),
+        ];
+
+        if ($os === 'WIN') {
+            // Windows diagnostics
+            $ps_output = [];
+            exec('powershell -Command "Get-DnsClientServerAddress | Select-Object -ExpandProperty ServerAddresses"', $ps_output);
+            $debug_info['powershell_output'] = $ps_output;
+            
+            $ipconfig_output = [];
+            exec('ipconfig /all', $ipconfig_output);
+            $debug_info['ipconfig_output'] = array_slice($ipconfig_output, 0, 50);
+        } else {
+            // Linux/Ubuntu diagnostics
+            $resolv_output = [];
+            if (file_exists('/etc/resolv.conf')) {
+                $resolv_output = file('/etc/resolv.conf', FILE_IGNORE_NEW_LINES);
+            }
+            $debug_info['resolv_conf'] = $resolv_output;
+            
+            $nslookup_test = [];
+            exec('nslookup google.com 2>&1', $nslookup_test);
+            $debug_info['nslookup_test'] = $nslookup_test;
+
+            $which_nslookup = [];
+            exec('which nslookup 2>&1', $which_nslookup);
+            $debug_info['nslookup_path'] = $which_nslookup;
+        }
+        
+        return response()->json($debug_info);
     }
 }

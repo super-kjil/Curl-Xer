@@ -47,6 +47,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', [App\Http\Controllers\DomainCheckerController::class, 'index'])->name('index');
         Route::post('/check-urls', [App\Http\Controllers\DomainCheckerController::class, 'checkUrls'])->name('check-urls');
         Route::get('/default-dns', [App\Http\Controllers\DomainCheckerController::class, 'getDefaultDNS'])->name('default-dns');
+        Route::get('/debug-dns', [App\Http\Controllers\DomainCheckerController::class, 'debugDNS'])->name('debug-dns');
         Route::get('/dns-servers', [App\Http\Controllers\DomainCheckerSettingsController::class, 'getDNSServers'])->name('dns-servers');
     });
 
