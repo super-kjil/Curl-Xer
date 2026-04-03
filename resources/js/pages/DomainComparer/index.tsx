@@ -98,14 +98,42 @@ export default function DomainComparerPage() {
 
     const handleCopy = (domains: string[], listName: string) => {
         const text = domains.join('\n');
-        navigator.clipboard.writeText(text).then(() => {
+        
+        // Try Clipboard API first (modern browsers)
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => {
+                toast.success('Successfully', {
+                    className: 'success-toast',
+                    description: `Copied ${domains.length} domains from ${listName} to clipboard`,
+                });
+            }).catch(() => {
+                fallbackCopy(text, domains.length, listName);
+            });
+        } else {
+            // Fallback for non-HTTPS or older browsers
+            fallbackCopy(text, domains.length, listName);
+        }
+    };
+
+    const fallbackCopy = (text: string, count: number, listName: string) => {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        
+        try {
+            textarea.select();
+            document.execCommand('copy');
             toast.success('Successfully', {
                 className: 'success-toast',
-                description: `Copied ${domains.length} domains from ${listName} to clipboard`,
+                description: `Copied ${count} domains from ${listName} to clipboard`,
             });
-        }).catch(() => {
+        } catch (error) {
             toast.error('Failed to copy to clipboard');
-        });
+        } finally {
+            document.body.removeChild(textarea);
+        }
     };
 
     const handleList1FileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
