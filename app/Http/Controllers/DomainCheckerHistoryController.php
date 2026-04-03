@@ -519,14 +519,12 @@ class DomainCheckerHistoryController extends Controller
             ->get()
             ->keyBy('batch_id');
 
-        // Keep only a small preview of results per batch for history page rendering.
-        $perBatchLimit = 100;
+        // Fetch all results per batch for history page rendering as requested.
         $resultsByBatch = [];
         foreach ($batchIds as $batchId) {
             $resultsByBatch[$batchId] = DB::table('domain_check_results')
                 ->where('batch_id', $batchId)
                 ->orderBy('checked_at', 'desc')
-                ->limit($perBatchLimit)
                 ->get();
         }
 
