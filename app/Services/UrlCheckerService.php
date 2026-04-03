@@ -582,7 +582,7 @@ class UrlCheckerService
                 'status' => null,
                 'accessible' => true,
                 'error' => null,
-                'message' => "Address: {$ip} & Name: {$resolvedName}",
+                'message' => "Address: {$ip} = Not Blocked",
                 'result_kind' => 'not_blocked',
             ];
         }
