@@ -412,7 +412,7 @@ export default function DomainCheckerIndex() {
                                             <Badge variant="outline">
                                                 Not Existed: <span className="ml-1 font-semibold text-blue-600">{results.filter(result => result.message?.trim().toLowerCase() === 'domain not existed').length}</span>
                                             </Badge> 
-                                            <Badge variant="outline" className="text-blue-600" >
+                                            <Badge variant="secondary" className="text-green-600" >
                                                 New 
                                             </Badge>            
                                         </div>
@@ -431,7 +431,6 @@ export default function DomainCheckerIndex() {
                                             <Progress value={progress} className="w-full" />
                                             <div className="mt-2 flex items-center justify-between">
                                                 <span className="text-xs text-muted-foreground">{Math.round(progress)}% complete</span>
-                                                <span className="text-xs text-muted-foreground">{totalUrls - checkedUrls} remaining</span>
                                             </div>
                                         </div>
                                     )}
