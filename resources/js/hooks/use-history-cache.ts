@@ -44,10 +44,11 @@ interface CachedHistory {
     compressed?: boolean;
 }
 
-interface DBCachedData extends CachedHistory {
-    key?: string;
-    value?: unknown;
-}
+// DBCachedData interface kept for potential future use
+// interface DBCachedData extends CachedHistory {
+//     key?: string;
+//     value?: unknown;
+// }
 
 const CACHE_KEY = 'domain-checker-history-cache';
 const CACHE_VERSION = '1.0.0';
@@ -271,6 +272,7 @@ export const useHistoryCache = () => {
             }
         }
     }, []);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const saveChunks = useCallback(async (data: GroupedHistoryItem[]) => {
         try {
             const chunks = [];

@@ -9,7 +9,7 @@ import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import axios from 'axios';
-import { AtSign, Calendar, CheckCircle, Copy, CopyCheck, Globe, Link2, Loader2, Sparkles, Tag, Trash2, Zap } from 'lucide-react';
+import { AtSign, Calendar, CheckCircle, Copy, Globe, Link2, Loader2, Sparkles, Tag, Trash2, Zap } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -57,9 +57,6 @@ export default function UrlGeneratorIndex() {
     const [includeNonWww, setIncludeNonWww] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
     const [results, setResults] = useState<GenerateResponse['results']>({});
-    const [totalUrls, setTotalUrls] = useState(0);
-    const [totalGenerated, setTotalGenerated] = useState(0);
-    const [duplicateCount, setDuplicateCount] = useState(0);
     const [copiedItems, setCopiedItems] = useState<Set<string>>(new Set());
     const [hasStoredResults, setHasStoredResults] = useState(false);
 

@@ -5,7 +5,7 @@ import { Head } from '@inertiajs/react';
 import { PermissionGate } from '@/components/permission-gate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, Upload, Copy } from 'lucide-react';
+import { Shield, Copy } from 'lucide-react';
 import React, { useState, useRef } from 'react'
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -103,7 +103,7 @@ export default function DomainComparerPage() {
                 className: 'success-toast',
                 description: `Copied ${domains.length} domains from ${listName} to clipboard`,
             });
-        }).catch((err) => {
+        }).catch(() => {
             toast.error('Failed to copy to clipboard');
         });
     };

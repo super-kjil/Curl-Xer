@@ -1,12 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone, type FileRejection } from 'react-dropzone';
 import mammoth from 'mammoth';
-import { Upload, FileText, Copy, CheckCircle, X } from 'lucide-react';
+import { Upload, FileText, Copy, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import AppLayout from '@/layouts/app-layout';
-import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Head } from '@inertiajs/react';
 import { BreadcrumbItem } from '@/types';
 import { Badge } from '@/components/ui/badge';
@@ -124,14 +123,12 @@ export default function Index() {
     } finally {
       setIsProcessing(false);
     }
-  }, [toast]);
+     
+  }, []);
 
   const onDropRejected = useCallback(
     (fileRejections: FileRejection[]) => {
       if (!fileRejections.length) return;
-
-      const rejection = fileRejections[0];
-      const file = rejection?.file;
 
       toast.error(
         'Error File type',
@@ -143,7 +140,8 @@ export default function Index() {
         }
       );
     },
-    [toast]
+     
+    []
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -176,7 +174,7 @@ export default function Index() {
         .replace(/^www\./i, '');
 
       return withoutPrefix
-        .replace(/[)\]\}>,.;:!?]+$/g, '')
+        .replace(/[(\]}),.;:!?]+$/g, '')
         .replace(/\.$/, '') // just in case the match includes a final dot
         .toLowerCase();
     };

@@ -3,7 +3,6 @@ import { Head } from '@inertiajs/react';
 import { format } from 'date-fns';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Chart } from '@/components/ui/chart';
 import { MultiChart } from '@/components/ui/multi-chart';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Button } from '@/components/ui/button';
@@ -37,9 +36,6 @@ export default function Dashboard() {
         error,
         loadChartData,
         refreshDashboard,
-        successRateData,
-        checksData,
-
     } = useDashboardCache();
 
     const { app_timezone } = usePage<SharedData>().props;
@@ -86,16 +82,6 @@ export default function Dashboard() {
     const handleDateChange = () => {
         if (startDate && endDate) {
             loadChartData('custom', format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd'));
-        }
-    };
-
-    const getFilterLabel = (filterValue: string) => {
-        switch (filterValue) {
-            case '7days': return 'Last 7 Days';
-            case '1month': return 'Last Month';
-            case '3months': return 'Last 3 Months';
-            case 'custom': return 'Custom Range';
-            default: return 'Last 7 Days';
         }
     };
 

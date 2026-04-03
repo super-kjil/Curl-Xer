@@ -36,6 +36,7 @@ export interface BreadcrumbItem {
 export interface NavItem {
     title: string;
     href: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     icon?: any;
     isExternal?: boolean;
     permission?: string;
@@ -51,6 +52,7 @@ export interface SharedData {
     };
     errors: Record<string, string[]>;
     app_timezone?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
 }
 
@@ -62,6 +64,7 @@ export interface PageProps {
     name?: string;
     sidebarOpen?: boolean;
     app_timezone?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
 }
 

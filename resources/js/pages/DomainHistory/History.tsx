@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { AlertTriangle, BadgeCheckIcon, CheckCircle, Trash, XCircle, ChevronDown, ChevronUp, History, ClipboardList, RefreshCw, Search, X, Inbox } from 'lucide-react';
+import { AlertTriangle, BadgeCheckIcon, CheckCircle, Trash, XCircle, ChevronDown, ChevronUp, History, ClipboardList, RefreshCw, Search, Inbox } from 'lucide-react';
 import { useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import { useHistoryCache } from '@/hooks/use-history-cache';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -165,6 +165,7 @@ export default function DomainCheckerHistory() {
     };
 
     const getStatusColorClass = (result: BatchResult) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const kind = (result as any).result_kind as string | undefined;
 
         if (kind === 'not_existed') return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
@@ -503,9 +504,12 @@ export default function DomainCheckerHistory() {
                                                         <div className="space-y-2">
                                                             {(batch.results || [])
                                                                 .sort((a, b) => {
+                                                                     
                                                                     const aNotExisted =
+                                                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                                         (a as any).result_kind === 'not_existed' || a.status === 404;
                                                                     const bNotExisted =
+                                                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                                         (b as any).result_kind === 'not_existed' || b.status === 404;
 
                                                                     // Not Existed always on top
@@ -533,8 +537,10 @@ export default function DomainCheckerHistory() {
                                                                             />
                                                                             <div className="mt-1 flex items-center text-xs">
                                                                             <span className={`inline-flex items-center px-2 py-0.5 rounded ${getStatusColorClass(result)}`}>
+                                                                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                                                                 {(result as any).result_kind === 'not_existed' || result.status === 404
                                                                                     ? 'Not Existed'
+                                                                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                                                     : (result as any).result_kind === 'blocked' || result.status === 403
                                                                                         ? 'Blocked'
                                                                                         : result.accessible
@@ -549,6 +555,7 @@ export default function DomainCheckerHistory() {
                                                                             </div>
                                                                         </div>
                                                                         <div className="flex ml-4 flex-shrink-0 items-center space-x-2">
+                                                                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                                                         {(result as any).result_kind === 'not_existed' || result.status === 404 ? (
                                                                             <AlertTriangle className="h-5 w-5 text-blue-600" />
                                                                         ) : result.accessible ? (

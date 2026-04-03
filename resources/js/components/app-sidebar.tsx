@@ -55,6 +55,13 @@ const mainNavItems: NavItem[] = [
         permission: 'view_domain_list',
         // badge: <Badge variant="secondary" className=" text-green-600">New</Badge>,   // ← Added
     },
+    
+    {
+        title: 'Domain Checker',
+        href: '/domain-checker',
+        icon: Globe,
+        permission: 'view_domain_checker',
+    },
     {
         title: 'Domain Comparer',
         href: '/domain-comparer',
@@ -62,12 +69,6 @@ const mainNavItems: NavItem[] = [
         permission: 'view_domain_comparer',
         badge: <Badge variant="secondary" className=" text-green-600">New</Badge>,   // ← Added
 
-    },
-    {
-        title: 'Domain Checker',
-        href: '/domain-checker',
-        icon: Globe,
-        permission: 'view_domain_checker',
     },
     {
         title: 'Domain History',

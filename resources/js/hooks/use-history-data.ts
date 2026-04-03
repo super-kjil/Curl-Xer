@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useHistoryStore } from '@/stores/useHistoryStore';
 
 export const useHistoryData = () => {
-    const [history, setHistory] = useState<any[]>([]);
+    const [history, setHistory] = useState<Record<string, unknown>[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
