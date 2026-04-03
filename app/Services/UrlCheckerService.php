@@ -534,27 +534,31 @@ class UrlCheckerService
         $seenName = false;
 
         foreach ($lines as $line) {
-            // Updated regex: allow leading whitespace (\s*)
-            if (preg_match('/^\s*Name:\s*(.+)$/i', $line, $nameMatch)) {
+            // Normalize tabs and trim for consistent parsing
+            $line = trim(str_replace("\t", " ", $line));
+            if ($line === '') continue;
+
+            // Look for Name: (can be anywhere in the line)
+            if (preg_match('/Name:\s*(.+)/i', $line, $nameMatch)) {
                 $resolvedName = trim($nameMatch[1]);
                 $seenName = true;
                 continue;
             }
 
-            if (!$seenName) {
-                continue;
-            }
-
-            // Updated regex: allow leading whitespace (\s*)
-            if (preg_match('/^\s*Addresses?:\s*(.+)$/i', $line, $addrMatch)) {
+            // Once we have a name, look for the following Address:
+            if ($seenName && preg_match('/Address(?:es)?:\s*(.+)/i', $line, $addrMatch)) {
                 $candidate = trim($addrMatch[1]);
+                // Remove port if present (e.g. #53)
+                $candidate = preg_replace('/#\d+$/', '', $candidate);
+                
                 if (filter_var($candidate, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
                     $resolvedAddresses[] = $candidate;
                 }
                 continue;
             }
 
-            if (filter_var($line, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            // Fallback for multi-line block addresses
+            if ($seenName && filter_var($line, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
                 $resolvedAddresses[] = $line;
             }
         }
@@ -562,12 +566,13 @@ class UrlCheckerService
         $resolvedAddresses = array_values(array_unique($resolvedAddresses));
         $ip = $resolvedAddresses[0] ?? null;
 
-        if ($ip === '0.0.0.0') {
+        // On many servers, 0.0.0.0 or 127.0.0.1 means blocked by DNS
+        if ($ip === '0.0.0.0' || $ip === '127.0.0.1') {
             return [
                 'status' => null,
                 'accessible' => false,
                 'error' => null,
-                'message' => 'Address: 0.0.0.0 = Blocked',
+                'message' => "Address: {$ip} = Blocked by DNS",
                 'result_kind' => 'blocked',
             ];
         }
@@ -577,7 +582,7 @@ class UrlCheckerService
                 'status' => null,
                 'accessible' => true,
                 'error' => null,
-                'message' => "Address: {$ip} & Name: {$resolvedName} = Not Blocked",
+                'message' => "Address: {$ip} & Name: {$resolvedName}",
                 'result_kind' => 'not_blocked',
             ];
         }
