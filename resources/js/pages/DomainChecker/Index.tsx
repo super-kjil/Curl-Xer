@@ -429,9 +429,6 @@ export default function DomainCheckerIndex() {
                                                 </span>
                                             </div>
                                             <Progress value={progress} className="w-full" />
-                                            <div className="mt-2 flex items-center justify-between">
-                                                <span className="text-xs text-muted-foreground">{Math.round(progress)}% complete</span>
-                                            </div>
                                         </div>
                                     )}
 
