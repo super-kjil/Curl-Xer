@@ -53,12 +53,15 @@ export default function UrlGeneratorIndex() {
     const [urls, setUrls] = useState('');
     const [prefix, setPrefix] = useState('TRC');
     const [date, setDate] = useState('');
-    const [includeWww, setIncludeWww] = useState(true);
+    const [includeWww, setIncludeWww] = useState(false);
     const [includeNonWww, setIncludeNonWww] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
     const [results, setResults] = useState<GenerateResponse['results']>({});
     const [copiedItems, setCopiedItems] = useState<Set<string>>(new Set());
     const [hasStoredResults, setHasStoredResults] = useState(false);
+    const [totalUrls, setTotalUrls] = useState(0);
+    const [totalGenerated, setTotalGenerated] = useState(0);
+    const [duplicateCount, setDuplicateCount] = useState(0);
 
     // Generate a session ID based on current session
     const getSessionId = () => {
@@ -482,6 +485,7 @@ export default function UrlGeneratorIndex() {
                                             <div className="flex items-center space-x-2">
                                                 <Checkbox
                                                     id="includeWww"
+                                                    disabled
                                                     checked={includeWww}
                                                     onCheckedChange={(checked) => setIncludeWww(checked as boolean)}
                                                 />
@@ -525,10 +529,10 @@ export default function UrlGeneratorIndex() {
 
                     {/* Results */}
                     {(results.www || results.non_www) && (
-                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 shadow-2xl">
-                            {results.www && renderUrlGroup('With www', results.www, <Globe className="h-5 w-5 text-blue-500" />, 'www')}
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-1 shadow-2xl">
+                            {/* {results.www && renderUrlGroup('With www', results.www, <Globe className="h-5 w-5 text-blue-500" />, 'www')} */}
                             {results.non_www &&
-                                renderUrlGroup('Without www', results.non_www, <AtSign className="h-5 w-5 text-purple-500" />, 'non-www')}
+                                renderUrlGroup('List none WWW', results.non_www, <AtSign className="h-5 w-5 text-purple-500" />, 'non-www')}
                         </div>
                     )}
 
