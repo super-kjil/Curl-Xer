@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\DomainLink;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -20,6 +21,7 @@ class AdminController extends Controller
         
         $roles = Role::with(['permissions', 'users'])->get();
         $permissions = Permission::all();
+        $domainLinks = DomainLink::all();
 
         // Get statistics for regular users only
         $stats = [
@@ -35,6 +37,7 @@ class AdminController extends Controller
             'users' => $regularUsers,
             'roles' => $roles,
             'permissions' => $permissions,
+            'domainLinks' => $domainLinks,
             'stats' => $stats,
         ]);
     }
@@ -70,6 +73,7 @@ class AdminController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'password' => 'nullable|string|min:8|confirmed',
             'role' => 'required|string|exists:roles,name',
         ]);
 
@@ -78,10 +82,17 @@ class AdminController extends Controller
             return redirect()->back()->with('error', 'Cannot assign admin role through the admin panel. Admin users should use the profile settings.');
         }
 
-        $user->update([
+        $userData = [
             'name' => $request->name,
             'email' => $request->email,
-        ]);
+        ];
+
+        // Only update password if provided and the acting user is an admin
+        if ($request->filled('password') && $request->user()->hasRole('admin')) {
+            $userData['password'] = bcrypt($request->password);
+        }
+
+        $user->update($userData);
 
         // Sync roles (remove old, add new)
         $user->syncRoles([$request->role]);

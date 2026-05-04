@@ -33,6 +33,7 @@ interface GroupedHistoryItem {
     primaryDns: string;
     secondaryDns: string;
     batches: BatchItem[];
+    created_by?: string;
 }
 
 interface CachedHistory {
@@ -359,13 +360,19 @@ export const useHistoryCache = () => {
                 setError(null);
             } else {
                 setError('Failed to load history data');
-                toast.error('Failed to load history');
+                toast.error('Error', {
+                    className: 'warning-toast',
+                    description: 'Failed to load history',
+                });
             }
         } catch (error: unknown) {
             console.error('Failed to load history:', error);
             const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
             setError(errorMessage);
-            toast.error('Failed to load history');
+            toast.error('Error', {
+                className: 'warning-toast',
+                description: 'Failed to load history',
+            });
         } finally {
             setLoading(false);
         }
@@ -401,11 +408,17 @@ export const useHistoryCache = () => {
                 });
             } else {
                 const errorMessage = response.data.message || 'Failed to delete history item';
-                toast.error(errorMessage);
+                toast.error('Error', {
+                    className: 'warning-toast',
+                    description: errorMessage,
+                });
             }
         } catch (error: unknown) {
             console.error('Failed to delete history item:', error);
-            toast.error('Failed to delete history item');
+            toast.error('Error', {
+                className: 'warning-toast',
+                description: 'Failed to delete history item',
+            });
         }
     }, [history, saveToCache]);
 
@@ -418,13 +431,22 @@ export const useHistoryCache = () => {
                 setHistory([]);
                 setLastFetched(null);
                 await clearCache();
-                toast.success('All history cleared');
+                toast.success('Successfully', {
+                    className: 'success-toast',
+                    description: 'All history cleared',
+                });
             } else {
-                toast.error('Failed to clear history');
+                toast.error('Error', {
+                    className: 'warning-toast',
+                    description: 'Failed to clear history',
+                });
             }
         } catch (error: unknown) {
             console.error('Failed to clear history:', error);
-            toast.error('Failed to clear history');
+            toast.error('Error', {
+                className: 'warning-toast',
+                description: 'Failed to clear history',
+            });
         }
     }, [clearCache]);
 
@@ -514,15 +536,24 @@ export const useHistoryCache = () => {
                     }).filter(Boolean) as GroupedHistoryItem[]; // Remove null items
                 });
 
-                toast.success('Domain result deleted successfully');
+                toast.success('Successfully', {
+                    className: 'success-toast',
+                    description: 'Domain result deleted successfully',
+                });
                 return true;
             } else {
-                toast.error(response.data.message || 'Failed to delete domain result');
+                toast.error('Error', {
+                    className: 'warning-toast',
+                    description: response.data.message || 'Failed to delete domain result',
+                });
                 return false;
             }
         } catch (error: unknown) {
             console.error('Failed to delete domain result:', error);
-            toast.error('Failed to delete domain result');
+            toast.error('Error', {
+                className: 'warning-toast',
+                description: 'Failed to delete domain result',
+            });
             return false;
         }
     }, []);
@@ -548,16 +579,25 @@ export const useHistoryCache = () => {
                         : item
                 );
                 await saveToCache(updatedHistory);
-                toast.success('History item updated successfully');
+                toast.success('Successfully', {
+                    className: 'success-toast',
+                    description: 'History item updated successfully',
+                });
                 return true;
             } else {
                 const errorMessage = response.data.message || 'Failed to update history item';
-                toast.error(errorMessage);
+                toast.error('Error', {
+                    className: 'warning-toast',
+                    description: errorMessage,
+                });
                 return false;
             }
         } catch (error: unknown) {
             console.error('Failed to update history item:', error);
-            toast.error('Failed to update history item');
+            toast.error('Error', {
+                className: 'warning-toast',
+                description: 'Failed to update history item',
+            });
             return false;
         }
     }, [history, saveToCache]);

@@ -18,12 +18,10 @@ class DomainCheckerSetting extends Model
         'large_batch_size',
         'timeout',
         'auto_detect_dns',
-        'custom_dns_servers',
     ];
 
     protected $casts = [
         'auto_detect_dns' => 'boolean',
-        'custom_dns_servers' => 'array',
     ];
 
     public function user(): BelongsTo

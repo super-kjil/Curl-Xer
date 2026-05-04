@@ -5,7 +5,7 @@ import { useForm } from '@inertiajs/react';
 interface DeleteConfirmationModalProps {
     isOpen: boolean;
     onClose: () => void;
-    itemType: 'user' | 'role';
+    itemType: 'user' | 'role' | 'link';
     itemName: string;
     deleteUrl: string;
 }

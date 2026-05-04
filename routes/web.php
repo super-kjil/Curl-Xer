@@ -95,6 +95,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Admin Registration Routes (for creating new users)
         Route::get('/register', [App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])->name('register');
         Route::post('/register', [App\Http\Controllers\Auth\RegisteredUserController::class, 'store'])->name('register.store');
+
+        // Domain Links Routes
+        Route::post('/domain-links', [App\Http\Controllers\DomainLinkController::class, 'store'])->name('domain-links.store')->middleware('permission:access_admin_panel');
+        Route::put('/domain-links/{domainLink}', [App\Http\Controllers\DomainLinkController::class, 'update'])->name('domain-links.update')->middleware('permission:access_admin_panel');
+        Route::delete('/domain-links/{domainLink}', [App\Http\Controllers\DomainLinkController::class, 'destroy'])->name('domain-links.delete')->middleware('permission:access_admin_panel');
     });
 });
 

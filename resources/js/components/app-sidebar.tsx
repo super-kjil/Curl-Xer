@@ -89,7 +89,7 @@ const footerNavItems: NavItem[] = [
         title: 'Admin Panel',
         href: '/admin',
         icon: Shield,
-        permission: 'manage_users',
+        permission: 'access_admin_panel',
         role: 'admin',
     },
 ];

@@ -24,12 +24,7 @@ export default function DomainCheckerSettings() {
         saveSettings,
         detectDNS,
         refreshServerDNS,
-
     } = useDNSSettings();
-
-    const handleSave = async () => {
-        await saveSettings();
-    };
 
 
 
@@ -133,41 +128,7 @@ export default function DomainCheckerSettings() {
                                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                         Secondary DNS server from the same network configuration
                                     </p>
-                                </div>
-
-                                {/* Custom DNS Servers */}
-                                {/* <div>
-                                    <div className="mb-2 flex items-center justify-between">
-                                        <label className="text-sm font-medium  dark:text-gray-300">Custom DNS Servers</label>
-                                        <button onClick={handleAddCustomDNS} className="text-sm text-blue-500 hover:text-blue-600">
-                                            <i className="fas fa-plus mr-1"></i>
-                                            Add
-                                        </button>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {(settings.custom_dns_servers || []).map((dns, index) => (
-                                            <div key={index} className="flex items-center space-x-2">
-                                                <Input
-                                                    type="text"
-                                                    value={dns}
-                                                    // className="cursor-not-allowed"
-                                                />
-                                                <button onClick={() => removeCustomDNS(index)} className="text-red-500 hover:text-red-600">
-                                                    <i className="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        ))}
-                                        {(settings.custom_dns_servers || []).length === 0 && (
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">No custom DNS servers added</p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <hr className="border-gray-200 dark:border-gray-700" />
-
-                                <h3 className="flex items-center text-lg font-semibold text-gray-800 dark:text-gray-100">
-                                    <Activity className='mr-2' /> Performance Settings
-                                </h3> */}
+                                </div>                                
 
                                 {/* Batch Size */}
                                 <div>
@@ -218,7 +179,7 @@ export default function DomainCheckerSettings() {
                                 {/* Save Button */}
                                 <div className="flex justify-end pt-4">
                                     <Button
-                                        onClick={handleSave}
+                                        onClick={saveSettings}
                                         disabled={saving}
                                     // className="rounded-lg bg-blue-500 px-6 py-2 text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
                                     >

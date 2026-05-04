@@ -20,7 +20,6 @@ return new class extends Migration
             $table->integer('large_batch_size')->default(1000);
             $table->integer('timeout')->default(30);
             $table->boolean('auto_detect_dns')->default(true);
-            $table->json('custom_dns_servers')->nullable();
             $table->timestamps();
         });
     }

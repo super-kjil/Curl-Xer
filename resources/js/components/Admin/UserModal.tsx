@@ -119,22 +119,22 @@ export function UserModal({ isOpen, onClose, user, roles, mode }: UserModalProps
                         {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
                     </div>
 
-                    {mode === 'create' && (
-                        <div className="space-y-2">
-                            <Label htmlFor="password_confirmation">Confirm Password</Label>
-                            <Input
-                                id="password_confirmation"
-                                type="password"
-                                value={data.password_confirmation}
-                                onChange={(e) => setData('password_confirmation', e.target.value)}
-                                placeholder="Confirm password"
-                                required
-                            />
-                            {errors.password_confirmation && (
-                                <p className="text-sm text-red-500">{errors.password_confirmation}</p>
-                            )}
-                        </div>
-                    )}
+                    <div className="space-y-2">
+                        <Label htmlFor="password_confirmation">
+                            {mode === 'create' ? 'Confirm Password' : 'Confirm New Password'}
+                        </Label>
+                        <Input
+                            id="password_confirmation"
+                            type="password"
+                            value={data.password_confirmation}
+                            onChange={(e) => setData('password_confirmation', e.target.value)}
+                            placeholder={mode === 'create' ? 'Confirm password' : 'Confirm new password'}
+                            required={mode === 'create' || data.password.length > 0}
+                        />
+                        {errors.password_confirmation && (
+                            <p className="text-sm text-red-500">{errors.password_confirmation}</p>
+                        )}
+                    </div>
 
                     <div className="space-y-2">
                         <Label htmlFor="role">Role</Label>

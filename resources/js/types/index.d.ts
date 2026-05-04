@@ -71,3 +71,15 @@ export interface Permission {
     created_at: string;
     updated_at: string;
 }
+
+export interface DomainLink {
+    id: number;
+    title: string;
+    badge: string | null;
+    description: string | null;
+    url: string;
+    icon_type: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}

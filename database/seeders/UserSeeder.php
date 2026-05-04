@@ -27,13 +27,13 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Admin',
                 'email' => 'admin@curlxer',
-                'password' => '123',
+                'password' => 'password',
                 'role' => 'admin'
             ],
             [
                 'name' => 'NOC',
                 'email' => 'noc@curlxer',
-                'password' => '123',
+                'password' => 'password',
                 'role' => 'user'
             ]
         ];

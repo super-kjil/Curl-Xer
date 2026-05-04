@@ -9,7 +9,6 @@ interface DNSSettings {
     large_batch_size: number;
     timeout: number;
     auto_detect_dns: boolean;
-    custom_dns_servers: string[];
     dns_source?: 'server' | 'user';
 }
 
@@ -35,8 +34,6 @@ interface UseDNSSettingsReturn {
     saveSettings: () => Promise<void>;
     detectDNS: () => Promise<void>;
     refreshServerDNS: () => Promise<void>;
-    addCustomDNS: (dns: string) => void;
-    removeCustomDNS: (index: number) => void;
 }
 
 export function useDNSSettings(): UseDNSSettingsReturn {
@@ -46,8 +43,7 @@ export function useDNSSettings(): UseDNSSettingsReturn {
         batch_size: 100,
         large_batch_size: 1000,
         timeout: 30,
-        auto_detect_dns: true,
-        custom_dns_servers: []
+        auto_detect_dns: true
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -72,7 +68,6 @@ export function useDNSSettings(): UseDNSSettingsReturn {
                     large_batch_size: serverSettings.large_batch_size || 1000,
                     timeout: serverSettings.timeout || 30,
                     auto_detect_dns: serverSettings.auto_detect_dns !== undefined ? serverSettings.auto_detect_dns : true,
-                    custom_dns_servers: serverSettings.custom_dns_servers || [],
                     dns_source: serverSettings.dns_source || 'server'
                 };
                 setSettings(completeSettings);
@@ -90,7 +85,10 @@ export function useDNSSettings(): UseDNSSettingsReturn {
         } catch (error: unknown) {
             console.error('Failed to load DNS settings:', error);
             const errorMessage = error instanceof Error ? error.message : 'Failed to load DNS settings';
-            toast.error(errorMessage);
+            toast.error('Error', {
+                className: 'warning-toast',
+                description: errorMessage,
+            });
         } finally {
             setLoading(false);
         }
@@ -107,14 +105,23 @@ export function useDNSSettings(): UseDNSSettingsReturn {
         try {
             const response = await axios.post('/domain-checker/settings', settings);
             if (response.data.success) {
-                toast.success('DNS settings saved successfully');
+                toast.success('Successfully', {
+                    className: 'success-toast',
+                    description: 'DNS settings saved successfully',
+                });
             } else {
-                toast.error(response.data.message || 'Failed to save DNS settings');
+                toast.error('Error', {
+                    className: 'warning-toast',
+                    description: response.data.message || 'Failed to save DNS settings',
+                });
             }
         } catch (error: unknown) {
             console.error('Failed to save DNS settings:', error);
             const errorMessage = error instanceof Error ? error.message : 'Failed to save DNS settings';
-            toast.error(errorMessage);
+            toast.error('Error', {
+                className: 'warning-toast',
+                description: errorMessage,
+            });
         } finally {
             setSaving(false);
         }
@@ -143,17 +150,30 @@ export function useDNSSettings(): UseDNSSettingsReturn {
                     cache_duration: response.data.cache_duration || '15 minutes'
                 });
                 
-                toast.success(response.data.message || 'Server DNS settings detected successfully');
+                toast.success('Successfully', {
+                    className: 'success-toast',
+                    description: response.data.message || 'Server DNS settings detected successfully',
+                });
                 if (response.data.note) {
-                    toast.info(response.data.note);
+                    toast.info('Info', {
+                        className: 'info-toast',
+                        descriptionClassName: 'info-toast-description',
+                        description: response.data.note,
+                    });
                 }
             } else {
-                toast.error('Failed to detect DNS settings');
+                toast.error('Error', {
+                    className: 'warning-toast',
+                    description: 'Failed to detect DNS settings',
+                });
             }
         } catch (error: unknown) {
             console.error('Failed to detect DNS:', error);
             const errorMessage = error instanceof Error ? error.message : 'Failed to detect DNS settings';
-            toast.error(errorMessage);
+            toast.error('Error', {
+                className: 'warning-toast',
+                description: errorMessage,
+            });
         } finally {
             setDetecting(false);
         }
@@ -182,42 +202,29 @@ export function useDNSSettings(): UseDNSSettingsReturn {
                     cache_duration: '15 minutes'
                 });
                 
-                toast.success(response.data.message || 'Server DNS cache refreshed successfully');
+                toast.success('Successfully', {
+                    className: 'success-toast',
+                    description: response.data.message || 'Server DNS cache refreshed successfully',
+                });
             } else {
-                toast.error('Failed to refresh server DNS cache');
+                toast.error('Error', {
+                    className: 'warning-toast',
+                    description: 'Failed to refresh server DNS cache',
+                });
             }
         } catch (error: unknown) {
             console.error('Failed to refresh server DNS:', error);
             const errorMessage = error instanceof Error ? error.message : 'Failed to refresh server DNS cache';
-            toast.error(errorMessage);
+            toast.error('Error', {
+                className: 'warning-toast',
+                description: errorMessage,
+            });
         } finally {
             setRefreshing(false);
         }
     };
 
-    // Add custom DNS server
-    const addCustomDNS = (dns: string) => {
-        if (dns && /^(\d{1,3}\.){3}\d{1,3}$/.test(dns)) {
-            const newSettings = {
-                ...settings,
-                custom_dns_servers: [...(settings.custom_dns_servers || []), dns]
-            };
-            setSettings(newSettings);
-            toast.success('Custom DNS server added');
-        } else {
-            toast.error('Invalid DNS server format');
-        }
-    };
 
-    // Remove custom DNS server
-    const removeCustomDNS = (index: number) => {
-        const newSettings = {
-            ...settings,
-            custom_dns_servers: (settings.custom_dns_servers || []).filter((_, i) => i !== index)
-        };
-        setSettings(newSettings);
-        toast.success('Custom DNS server removed');
-    };
 
     // Load settings on mount
     useEffect(() => {
@@ -235,8 +242,6 @@ export function useDNSSettings(): UseDNSSettingsReturn {
         updateSettings,
         saveSettings,
         detectDNS,
-        refreshServerDNS,
-        addCustomDNS,
-        removeCustomDNS
+        refreshServerDNS
     };
 }

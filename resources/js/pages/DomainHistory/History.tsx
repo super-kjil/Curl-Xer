@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { AlertTriangle, BadgeCheckIcon, CheckCircle, Trash, XCircle, ChevronDown, ChevronUp, History, ClipboardList, RefreshCw, Search, Inbox } from 'lucide-react';
+import { AlertTriangle, BadgeCheckIcon, CheckCircle, Trash, XCircle, ChevronDown, ChevronUp, History, ClipboardList, RefreshCw, Search, Inbox, User } from 'lucide-react';
 import { useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import { useHistoryCache } from '@/hooks/use-history-cache';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -50,6 +50,7 @@ interface GroupedHistoryItem {
     primaryDns: string;
     secondaryDns: string;
     batches: BatchItem[];
+    created_by?: string;
 }
 
 export default function DomainCheckerHistory() {
@@ -245,12 +246,22 @@ export default function DomainCheckerHistory() {
             document.body.removeChild(textArea);
 
             if (successful) {
-                toast.success('URLs with timestamps copied to clipboard');
+                toast.success('Successfully', {
+                    className: 'success-toast',
+                    descriptionClassName: 'success-toast-description',
+                    description: 'URLs with timestamps copied to clipboard',
+                });
             } else {
-                toast.error('Failed to copy URLs. Please copy manually.');
+                toast.error('Error', {
+                    className: 'warning-toast',
+                    description: 'Failed to copy URLs. Please copy manually.',
+                });
             }
         } catch (err) {
-            toast.error('Failed to copy URLs. Please copy manually.');
+            toast.error('Error', {
+                className: 'warning-toast',
+                description: 'Failed to copy URLs. Please copy manually.',
+            });
             console.error('Fallback copy failed:', err);
         }
     };
@@ -425,6 +436,12 @@ export default function DomainCheckerHistory() {
                                                         <div className="text-sm text-gray-600 dark:text-gray-400">
                                                             Success Rate: <span className="font-semibold text-green-600">{item.avgSuccessRate}%</span>
                                                         </div>
+                                                        {item.created_by && (
+                                                            <Badge variant="outline" className="text-xs text-muted-foreground">
+                                                                <User className="h-3 w-3 mr-1" />
+                                                                {item.created_by}
+                                                            </Badge>
+                                                        )}
                                                     </div>
                                                 </div>
 

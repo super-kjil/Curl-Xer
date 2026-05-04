@@ -107,3 +107,14 @@ export interface DomainCheckResult {
     created_at: string;
     updated_at: string;
 }
+
+export interface DomainLink {
+    id: number;
+    title: string;
+    badge: string | null;
+    description: string | null;
+    url: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}

@@ -496,7 +496,8 @@ class DomainCheckerHistoryController extends Controller
         $limit = (int)($request->input('limit', 20));
 
         $batchesQuery = DB::table('domain_check_batches as b')
-            ->select('b.id as batch_id', 'b.note as command', 'b.created_at as timestamp')
+            ->select('b.id as batch_id', 'b.note as command', 'b.created_at as timestamp', 'b.user_id', 'u.name as created_by')
+            ->leftJoin('users as u', 'u.id', '=', 'b.user_id')
             ->orderBy('b.created_at', 'desc')
             ->limit($limit);
 
@@ -577,6 +578,7 @@ class DomainCheckerHistoryController extends Controller
                 'successRate' => $successRate,
                 'primaryDns' => $primaryDns,
                 'secondaryDns' => $secondaryDns,
+                'created_by' => $b->created_by ?? 'Unknown',
             ];
 
             $groupKey = $b->command ?? '';
@@ -589,6 +591,7 @@ class DomainCheckerHistoryController extends Controller
                     'latestTimestamp' => null,
                     'primaryDns' => $primaryDns,
                     'secondaryDns' => $secondaryDns,
+                    'created_by' => $b->created_by ?? 'Unknown',
                 ];
             }
 
@@ -611,6 +614,7 @@ class DomainCheckerHistoryController extends Controller
                 'batches' => $group['batches'],
                 'primaryDns' => $group['primaryDns'],
                 'secondaryDns' => $group['secondaryDns'] ?? '0.0.0.0',
+                'created_by' => $group['created_by'] ?? 'Unknown',
             ];
         }
 

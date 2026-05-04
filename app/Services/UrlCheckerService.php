@@ -40,17 +40,9 @@ class UrlCheckerService
         // Log::info('Server DNS cache cleared');
     }
 
-    /**
-     * Check if server DNS cache exists and is valid
-     */
-    public function hasValidServerDNSCache(): bool
-    {
-        return Cache::has('server_dns_settings');
-    }
 
-    /**
-     * Get cache info for debugging
-     */
+    //  * Get cache info for debugging
+    //  */
     public function getServerDNSCacheInfo(): array
     {
         $cacheKey = 'server_dns_settings';
@@ -330,15 +322,6 @@ class UrlCheckerService
         } catch (Exception $e) {
             // Log::warning('Failed to clear system DNS cache: ' . $e->getMessage());
         }
-    }
-
-    public function normalizeURL($url): string|false
-    {
-        $url = trim($url);
-        if (!preg_match('/^https?:\/\//i', $url)) {
-            $url = 'https://' . $url;
-        }
-        return filter_var($url, FILTER_VALIDATE_URL) ? $url : false;
     }
 
     public function normalizeDomain(string $domain): string|false

@@ -6,13 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Shield, Plus, Edit, Trash2, Users } from 'lucide-react';
-import { type BreadcrumbItem, User, Role, Permission } from '@/types';
+import { type BreadcrumbItem, User, Role, Permission, DomainLink } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 import { UserModal } from '@/components/Admin/UserModal';
 import { RoleModal } from '@/components/Admin/RoleModal';
+import { DomainLinkModal } from '@/components/Admin/DomainLinkModal';
 import { DeleteConfirmationModal } from '@/components/Admin/DeleteConfirmationModal';
 import { toast } from 'sonner';
 import { UserInfo } from '@/components/user-info';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -25,6 +27,7 @@ interface AdminPageProps {
     users: User[];
     roles: Role[];
     permissions: Permission[];
+    domainLinks: DomainLink[];
     stats: {
         total_users: number;
         active_users: number;
@@ -47,32 +50,41 @@ interface PageProps {
     [key: string]: unknown;
 }
 
-export default function Admin({ users, roles, permissions, stats }: AdminPageProps) {
+export default function Admin({ users, roles, permissions, domainLinks, stats }: AdminPageProps) {
     const { flash: pageFlash } = usePage<PageProps>().props;
 
     // Show flash messages
     useEffect(() => {
         if (pageFlash?.success) {
-            toast.success(pageFlash.success);
+            toast.success('Successfully', {
+                className: 'success-toast',
+                description: pageFlash.success,
+            });
         }
         if (pageFlash?.error) {
-            toast.error(pageFlash.error);
+            toast.error('Error', {
+                className: 'warning-toast',
+                description: pageFlash.error,
+            });
         }
     }, [pageFlash]);
 
     // Modal states
     const [userModalOpen, setUserModalOpen] = useState(false);
     const [roleModalOpen, setRoleModalOpen] = useState(false);
+    const [linkModalOpen, setLinkModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
     // Modal data
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-    const [deleteItem, setDeleteItem] = useState<{ type: 'user' | 'role'; name: string; url: string } | null>(null);
+    const [selectedLink, setSelectedLink] = useState<DomainLink | null>(null);
+    const [deleteItem, setDeleteItem] = useState<{ type: 'user' | 'role' | 'link'; name: string; url: string } | null>(null);
 
     // Modal modes
     const [userModalMode, setUserModalMode] = useState<'create' | 'edit'>('create');
     const [roleModalMode, setRoleModalMode] = useState<'create' | 'edit'>('create');
+    const [linkModalMode, setLinkModalMode] = useState<'create' | 'edit'>('create');
 
     const handleAddUser = () => {
         setUserModalMode('create');
@@ -107,6 +119,36 @@ export default function Admin({ users, roles, permissions, stats }: AdminPagePro
         setRoleModalOpen(true);
     };
 
+    const handleDeleteRole = (role: Role) => {
+        setDeleteItem({
+            type: 'role',
+            name: role.name.charAt(0).toUpperCase() + role.name.slice(1),
+            url: `/admin/roles/${role.id}`,
+        });
+        setDeleteModalOpen(true);
+    };
+
+    const handleAddLink = () => {
+        setLinkModalMode('create');
+        setSelectedLink(null);
+        setLinkModalOpen(true);
+    };
+
+    const handleEditLink = (link: DomainLink) => {
+        setLinkModalMode('edit');
+        setSelectedLink(link);
+        setLinkModalOpen(true);
+    };
+
+    const handleDeleteLink = (link: DomainLink) => {
+        setDeleteItem({
+            type: 'link',
+            name: link.title,
+            url: `/admin/domain-links/${link.id}`,
+        });
+        setDeleteModalOpen(true);
+    };
+
     const closeUserModal = () => {
         setUserModalOpen(false);
         setSelectedUser(null);
@@ -115,6 +157,11 @@ export default function Admin({ users, roles, permissions, stats }: AdminPagePro
     const closeRoleModal = () => {
         setRoleModalOpen(false);
         setSelectedRole(null);
+    };
+
+    const closeLinkModal = () => {
+        setLinkModalOpen(false);
+        setSelectedLink(null);
     };
 
     const closeDeleteModal = () => {
@@ -134,6 +181,7 @@ export default function Admin({ users, roles, permissions, stats }: AdminPagePro
                     <TabsList>
                         <TabsTrigger value="users">User Management</TabsTrigger>
                         <TabsTrigger value="roles">Role Management</TabsTrigger>
+                        <TabsTrigger value="links">Domain Links</TabsTrigger>
                     </TabsList>
 
                     {/* Users Tab */}
@@ -141,7 +189,9 @@ export default function Admin({ users, roles, permissions, stats }: AdminPagePro
                         <div className="flex items-center justify-between">
                             <div>
                                 <h2 className="text-lg font-semibold">User Management</h2>
-
+                                <p className="text-sm text-muted-foreground">
+                                    Manage regular users and assign roles
+                                </p>
                             </div>
                             <Button onClick={handleAddUser}>
                                 <Plus className="mr-2 h-4 w-4" />
@@ -208,19 +258,30 @@ export default function Admin({ users, roles, permissions, stats }: AdminPagePro
                                         <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
                                             <div className="flex items-center space-x-4">
                                                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                                                    <UserInfo user={user} showEmail={true} />
+                                                    <Avatar className="h-8 w-8 overflow-hidden rounded-full">
+                                                        <AvatarImage src={user.avatar} alt={user.name} />
+                                                        <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
+                                                            {user.name.charAt(0).toUpperCase()}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                                                        <span className="truncate font-medium">{user.name}</span>
+                                                        <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+                                                        <div className="flex flex-wrap gap-1 mt-1">
+                                                            {user.roles && user.roles.length > 0 ? (
+                                                                user.roles.map((role: Role) => (
+                                                                    <Badge key={role.id} variant="outline" className="text-xs">
+                                                                        {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+                                                                    </Badge>
+                                                                ))
+                                                            ) : (
+                                                                <Badge variant="outline" className="text-xs text-muted-foreground">
+                                                                    No Role
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                {/* <Avatar 
-                                                // className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-semibold"
-                                                className="flex size-full items-center justify-center rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white"
-                                                // src={user.avatar}
-                                                >
-                                                    {user.name.charAt(0).toUpperCase()}
-                                                </Avatar> */}
-                                                {/* <div>
-                                                    <p className="font-medium">{user.name}</p>
-                                                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                                                </div> */}
                                             </div>
                                             <div className="flex items-center space-x-2">
                                                 {/* <Badge variant={user.roles.some((role: { name: string }) => role.name === 'admin') ? 'default' : 'secondary'}>
@@ -321,25 +382,29 @@ export default function Admin({ users, roles, permissions, stats }: AdminPagePro
                                     {roles.filter(role => role.name !== 'admin').map((role) => (
                                         <div key={role.id} className="flex items-center justify-between p-4 border rounded-lg">
                                             <div className="flex items-center space-x-4">
-                                                <div className="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center font-semibold">
-                                                    {role.name.charAt(0).toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium">{role.name.charAt(0).toUpperCase() + role.name.slice(1)}</p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {role.name === 'user' ? 'Basic user access' : 'Custom role'}
-                                                    </p>
-                                                    <div className="flex flex-wrap gap-1 mt-1">
-                                                        {role.permissions?.slice(0, 3).map((permission: Permission) => (
-                                                            <Badge key={permission.id} variant="outline" className="text-xs">
-                                                                {permission.name}
-                                                            </Badge>
-                                                        ))}
-                                                        {role.permissions && role.permissions.length > 3 && (
-                                                            <Badge variant="outline" className="text-xs">
-                                                                +{role.permissions.length - 3} more
-                                                            </Badge>
-                                                        )}
+                                                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                                                    <Avatar className="h-8 w-8 overflow-hidden rounded-full">
+                                                        <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
+                                                            {role.name.charAt(0).toUpperCase()}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                                                        <span className="truncate font-medium">{role.name.charAt(0).toUpperCase() + role.name.slice(1)}</span>
+                                                        <span className="truncate text-xs text-muted-foreground">
+                                                            {role.name === 'user' ? 'Basic user access' : 'Custom role'}
+                                                        </span>
+                                                        <div className="flex flex-wrap gap-1 mt-1">
+                                                            {role.permissions?.slice(0, 3).map((permission: Permission) => (
+                                                                <Badge key={permission.id} variant="outline" className="text-xs">
+                                                                    {permission.name}
+                                                                </Badge>
+                                                            ))}
+                                                            {role.permissions && role.permissions.length > 3 && (
+                                                                <Badge variant="outline" className="text-xs">
+                                                                    +{role.permissions.length - 3} more
+                                                                </Badge>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -354,7 +419,13 @@ export default function Admin({ users, roles, permissions, stats }: AdminPagePro
                                                 >
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
-                                                {/* s */}
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleDeleteRole(role)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
                                             </div>
                                         </div>
                                     ))}
@@ -362,7 +433,87 @@ export default function Admin({ users, roles, permissions, stats }: AdminPagePro
                             </CardContent>
                         </Card>
                     </TabsContent>
-                </Tabs>
+
+                    {/* Domain Links Tab */}
+                    <TabsContent value="links" className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h2 className="text-lg font-semibold">Domain Links</h2>
+                                <p className="text-sm text-muted-foreground">
+                                    Manage dynamic links displayed on the Domain List page.
+                                </p>
+                            </div>
+                            <Button onClick={handleAddLink}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Link
+                            </Button>
+                        </div>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Links</CardTitle>
+                                <CardDescription>A list of all domain links configured for the system.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="rounded-md border border-gray-200 dark:border-gray-800">
+                                    <div className="overflow-x-auto">
+                                            <table className="w-full text-left text-sm">
+                                                <thead className="border-b border-gray-200 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/50">
+                                                    <tr>
+                                                        <th className="p-4 font-medium text-gray-500 dark:text-gray-400">Title</th>
+                                                        <th className="p-4 font-medium text-gray-500 dark:text-gray-400">Badge</th>
+                                                        <th className="p-4 font-medium text-gray-500 dark:text-gray-400">Status</th>
+                                                        <th className="p-4 text-right font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                                                    {domainLinks && domainLinks.length > 0 ? (
+                                                        domainLinks.map((link) => (
+                                                            <tr key={link.id} className="transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-900/50">
+                                                                <td className="p-4">
+                                                                    <div className="font-medium">{link.title}</div>
+                                                                    <div className="text-xs text-muted-foreground truncate max-w-[200px]">{link.url}</div>
+                                                                </td>
+                                                                <td className="p-4">
+                                                                    {link.badge ? <Badge variant="secondary">{link.badge}</Badge> : '-'}
+                                                                </td>
+                                                                <td className="p-4">
+                                                                    {link.is_active ? (
+                                                                        <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                                                            Active
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <Badge variant="secondary" className="bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                                                                            Inactive
+                                                                        </Badge>
+                                                                    )}
+                                                                </td>
+                                                                <td className="p-4 text-right">
+                                                                    <div className="flex items-center justify-end gap-2">
+                                                                        <Button variant="ghost" size="icon" onClick={() => handleEditLink(link)}>
+                                                                            <Edit className="h-4 w-4" />
+                                                                        </Button>
+                                                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteLink(link)}>
+                                                                            <Trash2 className="h-4 w-4 text-red-500" />
+                                                                        </Button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                                                                No domain links configured. Click "Add Link" to create one.
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
 
                 {/* Modals */}
                 <UserModal
@@ -379,6 +530,13 @@ export default function Admin({ users, roles, permissions, stats }: AdminPagePro
                     role={selectedRole}
                     permissions={permissions}
                     mode={roleModalMode}
+                />
+
+                <DomainLinkModal 
+                    isOpen={linkModalOpen} 
+                    onClose={closeLinkModal} 
+                    link={selectedLink} 
+                    mode={linkModalMode} 
                 />
 
                 {deleteItem && (

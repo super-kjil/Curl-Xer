@@ -32,8 +32,7 @@ class DomainCheckerSettingsController extends Controller
                 'batch_size' => 100,
                 'large_batch_size' => 1000,
                 'timeout' => 30,
-                'auto_detect_dns' => true,
-                'custom_dns_servers' => []
+                'auto_detect_dns' => true
             ]);
         }
         
@@ -51,7 +50,6 @@ class DomainCheckerSettingsController extends Controller
             'large_batch_size' => 'integer|min:500|max:2000',
             'timeout' => 'integer|min:5|max:300',
             'auto_detect_dns' => 'boolean',
-            'custom_dns_servers' => 'nullable|array',
         ]);
 
         // Validate DNS if provided
@@ -78,7 +76,6 @@ class DomainCheckerSettingsController extends Controller
                 'large_batch_size' => $request->large_batch_size ?? 1000,
                 'timeout' => $request->timeout ?? 30,
                 'auto_detect_dns' => $request->auto_detect_dns ?? true,
-                'custom_dns_servers' => $request->custom_dns_servers,
             ]
         );
 
@@ -107,8 +104,7 @@ class DomainCheckerSettingsController extends Controller
                 'batch_size' => 100,
                 'large_batch_size' => 1000,
                 'timeout' => 30,
-                'auto_detect_dns' => true,
-                'custom_dns_servers' => []
+                'auto_detect_dns' => true
             ]);
         }
         
