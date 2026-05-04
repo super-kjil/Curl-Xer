@@ -34,7 +34,7 @@ class UserSeeder extends Seeder
                 'name' => 'NOC',
                 'email' => 'noc@curlxer',
                 'password' => 'password',
-                'role' => 'user'
+                'role' => 'noc'
             ]
         ];
 

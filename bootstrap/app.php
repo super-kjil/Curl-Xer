@@ -9,6 +9,9 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Inertia\Inertia;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -32,5 +35,17 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->render(function (NotFoundHttpException $e, $request) {
+            return Inertia::render('errors/not-found', [
+                'status' => 404,
+                'message' => 'The page you are looking for could not be found.',
+            ])->toResponse($request)->setStatusCode(404);
+        });
+
+        $exceptions->render(function (AccessDeniedHttpException $e, $request) {
+            return Inertia::render('errors/permission-denied', [
+                'status' => 403,
+                'message' => 'Access denied. You do not have permission to access this resource.',
+            ])->toResponse($request)->setStatusCode(403);
+        });
     })->create();

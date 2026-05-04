@@ -10,7 +10,8 @@ import {
     Sparkle,
     ScanText,
     Folders,
-    GitCompare
+    GitCompare,
+    HardDrive
 } from 'lucide-react';
 import AppLogo from './app-logo';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -85,6 +86,12 @@ const mainNavItems: NavItem[] = [
 ];
 
 const footerNavItems: NavItem[] = [
+    {
+        title: 'Server Storage',
+        href: '/storage',
+        icon: HardDrive,
+        permission: 'view_server_storage',
+    },
     {
         title: 'Admin Panel',
         href: '/admin',

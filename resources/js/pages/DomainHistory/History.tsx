@@ -267,10 +267,10 @@ export default function DomainCheckerHistory() {
     };
 
 
-    // Keyboard shortcut for search (Ctrl+F)
+    // Keyboard shortcut for search (Ctrl+K or Cmd+K)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
                 e.preventDefault();
                 searchInputRef.current?.focus();
             }
@@ -337,7 +337,7 @@ export default function DomainCheckerHistory() {
                         <div className="grid w-full max-w-sm items-center gap-3">
                             <div className="flex items-center gap-2">
                                 <Search />
-                                <Label>Search by filename, or URL... (Ctrl+F)</Label>
+                                <Label>Search by filename, or URL... (Ctrl+K / ⌘+K)</Label>
                             </div>
                             <div className=" flex gap-2 items-center">
                                 <Input

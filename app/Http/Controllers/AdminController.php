@@ -180,4 +180,97 @@ class AdminController extends Controller
             'permissions' => Permission::all(),
         ]);
     }
+
+    public function storageStatus()
+    {
+        $path = base_path();
+        $totalSpace = disk_total_space($path);
+        $freeSpace = disk_free_space($path);
+        $usedSpace = $totalSpace - $freeSpace;
+        
+        // Calculate App size (base_path without storage/logs)
+        // Note: This is an estimation to avoid slow recursive directory sizing
+        $appSize = 0; // Fallback
+        
+        // Database Size Estimation
+        $dbSize = 0;
+        try {
+            $dbName = config('database.connections.mysql.database');
+            $results = \Illuminate\Support\Facades\DB::select("
+                SELECT SUM(data_length + index_length) as size 
+                FROM information_schema.TABLES 
+                WHERE table_schema = ?", [$dbName]);
+            $dbSize = $results[0]->size ?? 0;
+        } catch (\Exception $e) {
+            // Fallback if not MySQL or permission denied
+        }
+
+        // Storage/Logs size estimation
+        $storagePath = storage_path();
+        $logsSize = 0;
+        try {
+            // Robust recursive directory size calculation
+            $getDirSize = function($dir) use (&$getDirSize) {
+                $size = 0;
+                foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS)) as $file) {
+                    $size += $file->getSize();
+                }
+                return $size;
+            };
+
+            if (is_dir($storagePath)) {
+                $logsSize = $getDirSize($storagePath);
+            }
+        } catch (\Exception $e) {
+            $logsSize = 0;
+        }
+
+        // Application size (everything else used)
+        $appSize = max(0, $usedSpace - $dbSize - $logsSize);
+
+        $percentageUsed = $totalSpace > 0 ? ($usedSpace / $totalSpace) * 100 : 0;
+
+        $formatBytes = function ($bytes, $precision = 2) {
+            if ($bytes <= 0) return '0 B';
+            $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+            $pow = floor(log($bytes) / log(1024));
+            $pow = min($pow, count($units) - 1);
+            $bytes /= pow(1024, $pow);
+            return round($bytes, $precision) . ' ' . $units[$pow];
+        };
+
+        return Inertia::render('Admin/StorageStatus', [
+            'storage' => [
+                'total' => $formatBytes($totalSpace),
+                'free' => $formatBytes($freeSpace),
+                'used' => $formatBytes($usedSpace),
+                'percentage' => round($percentageUsed, 1),
+                'breakdown' => [
+                    'app' => [
+                        'label' => 'Application Files',
+                        'size' => $formatBytes($appSize),
+                        'percentage' => $usedSpace > 0 ? ($appSize / $totalSpace) * 100 : 0,
+                        'color' => '#4285F4', // Google Blue
+                    ],
+                    'database' => [
+                        'label' => 'Database',
+                        'size' => $formatBytes($dbSize),
+                        'percentage' => $usedSpace > 0 ? ($dbSize / $totalSpace) * 100 : 0,
+                        'color' => '#FBBC04', // Google Yellow
+                    ],
+                    'logs' => [
+                        'label' => 'Storage & Logs',
+                        'size' => $formatBytes($logsSize),
+                        'percentage' => $usedSpace > 0 ? ($logsSize / $totalSpace) * 100 : 0,
+                        'color' => '#EA4335', // Google Red
+                    ],
+                ],
+                'raw' => [
+                    'total' => $totalSpace,
+                    'free' => $freeSpace,
+                    'used' => $usedSpace,
+                ]
+            ]
+        ]);
+    }
 }

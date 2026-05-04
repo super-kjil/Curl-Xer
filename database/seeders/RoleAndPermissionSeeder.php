@@ -16,14 +16,17 @@ class RoleAndPermissionSeeder extends Seeder
         // Define all permissions
         $permissions = [
             'access_admin_panel',
+            'manage_users',
+            'manage_roles',
             'view_dashboard',
-            'view_domain_generator',
-            'view_domain_checker',
-            'view_domain_history',
-            'view_domain_list',
-            'view_domain_comparer',
-            'view_dns_settings',
             'view_domain_extractor',
+            'view_domain_generator',
+            'view_domain_list',
+            'view_domain_checker',
+            'view_domain_comparer',
+            'view_domain_history',
+            'view_dns_settings',
+            'view_server_storage',
         ];
 
         foreach ($permissions as $permission) {
@@ -37,16 +40,15 @@ class RoleAndPermissionSeeder extends Seeder
         $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
         $adminRole->syncPermissions(Permission::all());
 
-        $userRole = Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']);
+        $userRole = Role::firstOrCreate(['name' => 'noc', 'guard_name' => 'web']);
         $userRole->syncPermissions([
             'view_dashboard',
             'view_domain_generator',
+            'view_domain_extractor',
             'view_domain_checker',
             'view_domain_history',
             'view_domain_list',
-            'view_dns_settings',
             'view_domain_comparer',
-            'view_domain_extractor',
         ]);
 
         $this->command->info('Roles and permissions created successfully.');

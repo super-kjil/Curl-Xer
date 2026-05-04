@@ -5,7 +5,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\DomainListController;
 
 Route::get('/', function () {
-    return Inertia::render('welcome');
+    return Inertia::render('welcome-production');
 })->name('home');
 
 // All routes that require authentication and verification
@@ -101,6 +101,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/domain-links/{domainLink}', [App\Http\Controllers\DomainLinkController::class, 'update'])->name('domain-links.update')->middleware('permission:access_admin_panel');
         Route::delete('/domain-links/{domainLink}', [App\Http\Controllers\DomainLinkController::class, 'destroy'])->name('domain-links.delete')->middleware('permission:access_admin_panel');
     });
+
+    // Server Storage Monitoring (Independent of Admin Panel permission)
+    Route::get('storage', [App\Http\Controllers\AdminController::class, 'storageStatus'])
+        ->name('admin.storage.index')
+        ->middleware('permission:view_server_storage');
 });
 
 // Error handling routes
