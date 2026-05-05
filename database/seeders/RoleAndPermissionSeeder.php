@@ -27,6 +27,8 @@ class RoleAndPermissionSeeder extends Seeder
             'view_domain_history',
             'view_dns_settings',
             'view_server_storage',
+            'view_activity_logs',
+            'delete_activity_logs',
         ];
 
         foreach ($permissions as $permission) {

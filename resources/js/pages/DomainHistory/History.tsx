@@ -321,7 +321,7 @@ export default function DomainCheckerHistory() {
                                         <Button
                                             variant="destructive"
                                             onClick={openClearDialog}
-                                            title="Clear all history"
+                                            // title="Clear all history"
                                         >
                                             <Trash className="mr-2" />
                                             Erase All History

@@ -11,7 +11,8 @@ import {
     ScanText,
     Folders,
     GitCompare,
-    HardDrive
+    HardDrive,
+    Activity
 } from 'lucide-react';
 import AppLogo from './app-logo';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -91,6 +92,12 @@ const footerNavItems: NavItem[] = [
         href: '/storage',
         icon: HardDrive,
         permission: 'view_server_storage',
+    },
+    {
+        title: 'Activity Logs',
+        href: '/activity-logs',
+        icon: Activity,
+        permission: 'view_activity_logs',
     },
     {
         title: 'Admin Panel',

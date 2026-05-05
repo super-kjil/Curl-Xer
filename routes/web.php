@@ -106,6 +106,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('storage', [App\Http\Controllers\AdminController::class, 'storageStatus'])
         ->name('admin.storage.index')
         ->middleware('permission:view_server_storage');
+
+    // Activity Logs
+    Route::prefix('activity-logs')->name('admin.activity-logs.')->middleware('permission:view_activity_logs')->group(function () {
+        Route::get('/', [App\Http\Controllers\ActivityLogController::class, 'index'])->name('index');
+        Route::delete('/{activity}', [App\Http\Controllers\ActivityLogController::class, 'destroy'])
+            ->name('destroy')
+            ->middleware('permission:delete_activity_logs');
+        Route::delete('/clear/all', [App\Http\Controllers\ActivityLogController::class, 'clear'])
+            ->name('clear')
+            ->middleware('permission:delete_activity_logs');
+    });
 });
 
 // Error handling routes

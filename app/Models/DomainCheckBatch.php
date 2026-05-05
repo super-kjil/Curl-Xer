@@ -8,10 +8,27 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Builder;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class DomainCheckBatch extends Model
 {
-	use HasFactory, MassPrunable;
+	use HasFactory, MassPrunable, LogsActivity;
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['note'])
+            ->useLogName('domain_checker')
+            ->setDescriptionForEvent(function(string $eventName) {
+                if ($eventName === 'created') {
+                    return $this->note;
+                }
+                return "Domain Checker batch {$eventName}";
+            })
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
 
 	/**
 	 * Get the prunable model query.
