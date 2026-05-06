@@ -43,7 +43,7 @@ class DomainCheckResult extends Model
      */
     public function prunable()
     {
-        return static::where('created_at', '<=', now()->subDays(60));
+        return static::where('created_at', '<=', now()->subDays(90));
     }
 }
 
