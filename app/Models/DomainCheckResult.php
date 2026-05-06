@@ -5,12 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\MassPrunable;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 class DomainCheckResult extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, MassPrunable;
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -35,6 +36,14 @@ class DomainCheckResult extends Model
     public function batch(): BelongsTo
     {
         return $this->belongsTo(DomainCheckBatch::class, 'batch_id');
+    }
+
+    /**
+     * Get the prunable model query.
+     */
+    public function prunable()
+    {
+        return static::where('created_at', '<=', now()->subDays(60));
     }
 }
 
